@@ -7,3 +7,8 @@ export {
   formatScore,
   calculateTotalScore,
 } from './scoring';
+export {
+  validateUniqueFactions,
+  getOtherSelectedFactions,
+  type FactionValidationResult,
+} from './validation';

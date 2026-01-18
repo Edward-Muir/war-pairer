@@ -397,13 +397,17 @@ This checklist breaks down all tasks into discrete items that can be completed a
 ```
 [ ] 18.1 Audit all touch targets (minimum 44x44px)
 [ ] 18.2 Test matrix scrolling on mobile devices
-[ ] 18.3 Add viewport meta tag for proper mobile scaling
+[x] 18.3 Add viewport meta tag for proper mobile scaling
+         Note: Added to index.html with viewport-fit=cover
 [ ] 18.4 Test in iOS Safari and Chrome Android
-[ ] 18.5 Add PWA manifest.json
+[~] 18.5 Add PWA manifest.json (PARTIAL - icons missing)
          - name, short_name, icons
          - start_url, display: standalone
          - theme_color, background_color
-[ ] 18.6 Add apple-touch-icon for iOS home screen
+         Note: manifest.json created with all fields, but icon files
+         (/icons/icon-192.png, /icons/icon-512.png) not yet created
+[~] 18.6 Add apple-touch-icon for iOS home screen (PARTIAL - icon missing)
+         Note: Link added to index.html, but /apple-touch-icon.png not created
 [ ] 18.7 Test "Add to Home Screen" on iOS and Android
 ```
 

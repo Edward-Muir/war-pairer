@@ -8,6 +8,7 @@ import { PlayerInput } from '@/components/Inputs/PlayerInput';
 import { RoundIndicator } from '@/components/Display/RoundIndicator';
 import { useTournamentStore } from '@/store/tournamentStore';
 import { createDefaultPlayers } from '@/store/teamStore';
+import { validateUniqueFactions, getOtherSelectedFactions } from '@/utils';
 import type { Player } from '@/store/types';
 
 export function RoundSetupPage() {
@@ -81,6 +82,14 @@ export function RoundSetupPage() {
     setOpponentPlayers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, faction } : p))
     );
+    // Clear faction error when user changes selection
+    if (errors[`faction-${index}`]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[`faction-${index}`];
+        return next;
+      });
+    }
   };
 
   const validate = (): boolean => {
@@ -95,6 +104,14 @@ export function RoundSetupPage() {
         newErrors[`player-${index}`] = 'Player name is required';
       }
     });
+
+    // Validate unique factions for opponent team
+    const factionValidation = validateUniqueFactions(opponentPlayers);
+    if (!factionValidation.isValid) {
+      Object.entries(factionValidation.errors).forEach(([key, value]) => {
+        newErrors[key] = value;
+      });
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -229,6 +246,8 @@ export function RoundSetupPage() {
                 onNameChange={(name) => handlePlayerNameChange(index, name)}
                 onFactionChange={(faction) => handlePlayerFactionChange(index, faction)}
                 error={errors[`player-${index}`]}
+                factionError={errors[`faction-${index}`]}
+                excludedFactions={getOtherSelectedFactions(opponentPlayers, index)}
               />
             ))}
           </div>

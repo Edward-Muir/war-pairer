@@ -10,6 +10,7 @@ export interface FactionAutocompleteProps {
   id?: string;
   disabled?: boolean;
   className?: string;
+  excludedFactions?: string[]; // factions to hide from dropdown (already selected by other players)
 }
 
 export function FactionAutocomplete({
@@ -20,6 +21,7 @@ export function FactionAutocomplete({
   id,
   disabled = false,
   className = '',
+  excludedFactions = [],
 }: FactionAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -30,12 +32,21 @@ export function FactionAutocomplete({
   const inputId = id || `faction-${label?.toLowerCase().replace(/\s+/g, '-') || 'input'}`;
   const listboxId = `${inputId}-listbox`;
 
-  // Filter factions based on input
-  const filteredFactions = value.trim()
-    ? FACTIONS.filter((faction) =>
-        faction.toLowerCase().includes(value.toLowerCase())
-      )
-    : [...FACTIONS];
+  // Filter factions based on input and excluded factions
+  const excludedSet = new Set(
+    excludedFactions.map((f) => f.toLowerCase())
+  );
+
+  const filteredFactions = FACTIONS.filter((faction) => {
+    const normalizedFaction = faction.toLowerCase();
+    // Don't exclude the currently selected faction (allows keeping current selection visible)
+    const isCurrentValue = normalizedFaction === value.toLowerCase();
+    const isExcluded = excludedSet.has(normalizedFaction);
+    const matchesSearch =
+      !value.trim() || normalizedFaction.includes(value.toLowerCase());
+
+    return matchesSearch && (!isExcluded || isCurrentValue);
+  });
 
   // Handle click outside to close dropdown
   useEffect(() => {

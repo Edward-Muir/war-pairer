@@ -9,6 +9,8 @@ export interface PlayerInputProps {
   label?: string;
   disabled?: boolean;
   error?: string;
+  factionError?: string;
+  excludedFactions?: string[];
   className?: string;
 }
 
@@ -21,6 +23,8 @@ export function PlayerInput({
   label,
   disabled = false,
   error,
+  factionError,
+  excludedFactions,
   className = '',
 }: PlayerInputProps) {
   const displayLabel = label ?? `Player ${index + 1}`;
@@ -61,12 +65,16 @@ export function PlayerInput({
             placeholder="Faction"
             id={`${inputId}-faction`}
             disabled={disabled}
+            excludedFactions={excludedFactions}
           />
         </div>
       </div>
 
       {error && (
         <p className="mt-1 ml-10 text-sm text-red-600">{error}</p>
+      )}
+      {factionError && (
+        <p className="mt-1 ml-10 text-sm text-red-600">{factionError}</p>
       )}
     </div>
   );
