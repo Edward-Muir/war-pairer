@@ -44,7 +44,7 @@ export function ScorePickerCell({
       aria-label={ariaLabel || `Score: ${value}`}
       aria-valuenow={value}
       whileTap={reducedMotion ? undefined : { scale: 0.92 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      transition={{ type: 'tween', duration: 0.05 }}
       className={`
         w-11 h-11 min-w-[44px] min-h-[44px]
         flex items-center justify-center

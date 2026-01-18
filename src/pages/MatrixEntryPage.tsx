@@ -82,28 +82,30 @@ export function MatrixEntryPage() {
 
   return (
     <Layout title="Enter Matchup Scores" showBack onBack={handleBack}>
-      {/* Round indicator */}
-      <RoundIndicator
-        currentRound={roundIdx + 1}
-        totalRounds={tournament.rounds.length}
-      />
+      <div className="px-4">
+        {/* Round indicator */}
+        <RoundIndicator
+          currentRound={roundIdx + 1}
+          totalRounds={tournament.rounds.length}
+        />
 
-      {/* Instructions */}
-      <Card className="mt-4">
-        <p className="text-sm text-gray-600">
-          Enter your expected score (0-20) for each matchup.
-          10 = even match. Higher = better for you.
-        </p>
-      </Card>
+        {/* Instructions */}
+        <Card className="mt-4">
+          <p className="text-sm text-gray-600">
+            Enter your expected score (0-20) for each matchup.
+            10 = even match. Higher = better for you.
+          </p>
+        </Card>
 
-      {/* Quick fill buttons */}
-      <div className="flex gap-2 mt-4">
-        <Button variant="secondary" size="sm" onClick={handleAllTens}>
-          All 10s
-        </Button>
+        {/* Quick fill buttons */}
+        <div className="flex gap-2 mt-4">
+          <Button variant="secondary" size="sm" onClick={handleAllTens}>
+            Reset
+          </Button>
+        </div>
       </div>
 
-      {/* Matrix grid */}
+      {/* Matrix grid - handles its own edge-to-edge scrolling */}
       <div className="mt-4">
         <MatrixGrid
           ourTeam={tournament.ourTeam.players}
@@ -113,11 +115,13 @@ export function MatrixEntryPage() {
         />
       </div>
 
-      {/* Start pairing button */}
-      <div className="mt-6 pb-4">
-        <Button variant="primary" fullWidth onClick={handleStartPairing}>
-          Start Pairing
-        </Button>
+      <div className="px-4">
+        {/* Start pairing button */}
+        <div className="mt-6 pb-4">
+          <Button variant="primary" fullWidth onClick={handleStartPairing}>
+            Start Pairing
+          </Button>
+        </div>
       </div>
     </Layout>
   );

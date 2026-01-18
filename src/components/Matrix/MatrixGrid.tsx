@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
 import { ScorePickerCell } from '@/components/Inputs/ScorePickerCell';
 import { ScorePickerPopover } from '@/components/Inputs/ScorePickerPopover';
 import { MatrixRowEditor } from './MatrixRowEditor';
@@ -73,20 +72,28 @@ export function MatrixGrid({
             <tr>
               {/* Corner cell */}
               <th
-                className="sticky top-0 left-0 z-30 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 border-b border-r border-gray-200"
+                className="sticky top-0 left-0 z-30 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-500 border-b border-r border-gray-200 h-[100px] align-bottom"
               >
-                vs
+                <span className="block pb-1">vs</span>
               </th>
-              {/* Opponent column headers */}
+              {/* Opponent column headers (rotated 90 degrees, faction highlighted) */}
               {oppTeam.map((player) => (
                 <th
                   key={player.id}
-                  className="sticky top-0 z-20 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-700 border-b border-gray-200 min-w-[100px]"
-                  title={player.faction}
+                  className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200 h-[100px] w-[52px] p-0 align-bottom"
+                  title={`${player.name} - ${player.faction}`}
                 >
-                  <div className="truncate max-w-[80px]">{player.name}</div>
-                  <div className="text-[10px] text-gray-400 truncate max-w-[80px]">
-                    {player.faction}
+                  <div className="h-full flex items-end justify-center pb-1">
+                    <div
+                      className="flex flex-col items-start"
+                      style={{
+                        writingMode: 'vertical-rl',
+                        transform: 'rotate(180deg)',
+                      }}
+                    >
+                      <span className="text-xs font-semibold text-gray-700">{player.faction}</span>
+                      <span className="text-[10px] text-gray-400">{player.name}</span>
+                    </div>
                   </div>
                 </th>
               ))}
@@ -95,12 +102,16 @@ export function MatrixGrid({
           <tbody>
             {ourTeam.map((ourPlayer, ourIndex) => (
               <tr key={ourPlayer.id}>
-                {/* Row header - our player name */}
-                <td
-                  className="sticky left-0 z-10 bg-gray-50 px-2 py-2 border-r border-gray-200"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-[80px]">
+                {/* Row header - our player name (clickable to edit row) */}
+                <td className="sticky left-0 z-10 bg-gray-50 px-1 py-1 border-r border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => handleRowEdit(ourIndex)}
+                    disabled={disabled}
+                    className="flex items-center min-h-[44px] min-w-[44px] text-left hover:bg-gray-200 rounded px-1 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    aria-label={`Edit row for ${ourPlayer.name}`}
+                  >
+                    <div>
                       <div className="text-xs font-medium text-gray-700 truncate max-w-[70px]">
                         {ourPlayer.name}
                       </div>
@@ -108,16 +119,7 @@ export function MatrixGrid({
                         {ourPlayer.faction}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRowEdit(ourIndex)}
-                      disabled={disabled}
-                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                      aria-label={`Edit row for ${ourPlayer.name}`}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  </div>
+                  </button>
                 </td>
                 {/* Score cells */}
                 {oppTeam.map((oppPlayer, oppIndex) => (

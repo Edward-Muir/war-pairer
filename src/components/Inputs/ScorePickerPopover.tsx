@@ -78,7 +78,7 @@ export function ScorePickerPopover({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0 : 0.1 }}
+            transition={{ duration: reducedMotion ? 0 : 0.05 }}
             onClick={handleBackdropClick}
           />
 
@@ -94,8 +94,8 @@ export function ScorePickerPopover({
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             transition={{
               type: 'spring',
-              stiffness: 700,
-              damping: 35,
+              stiffness: 1200,
+              damping: 40,
               duration: reducedMotion ? 0 : undefined,
             }}
           >
@@ -126,7 +126,7 @@ export function ScorePickerPopover({
                     type="button"
                     onClick={() => handleSelect(scoreValue)}
                     whileTap={reducedMotion ? undefined : { scale: 0.92 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    transition={{ type: 'tween', duration: 0.05 }}
                     className={`
                       aspect-square
                       flex items-center justify-center
