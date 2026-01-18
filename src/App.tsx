@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/HomePage';
 import { TeamSetupPage } from '@/pages/TeamSetupPage';
 import { TournamentSetupPage } from '@/pages/TournamentSetupPage';
 import { RoundSetupPage } from '@/pages/RoundSetupPage';
+import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
 
 // Placeholder pages - will be implemented in later phases
 function TournamentSummaryPage() {
@@ -13,16 +14,6 @@ function TournamentSummaryPage() {
     <Layout title="Tournament" showBack onBack={() => window.history.back()}>
       <div className="p-4">
         <p className="text-gray-600">Tournament summary page placeholder</p>
-      </div>
-    </Layout>
-  );
-}
-
-function MatrixEntryPage() {
-  return (
-    <Layout title="Enter Matrix" showBack onBack={() => window.history.back()}>
-      <div className="p-4">
-        <p className="text-gray-600">Matrix entry page placeholder</p>
       </div>
     </Layout>
   );
