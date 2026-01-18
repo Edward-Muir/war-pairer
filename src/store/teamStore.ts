@@ -22,7 +22,7 @@ export const createDefaultPlayers = (): [Player, Player, Player, Player, Player]
   return [0, 1, 2, 3, 4].map((index) => ({
     id: crypto.randomUUID(),
     index,
-    name: `Player ${index + 1}`,
+    name: '',
     faction: '',
   })) as [Player, Player, Player, Player, Player];
 };

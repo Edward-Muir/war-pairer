@@ -39,10 +39,7 @@ export function RoundSetupPage() {
       setOpponentTeamName(existingRound.opponentTeamName);
       setOpponentPlayers([...existingRound.opponentPlayers]);
     } else {
-      setOpponentPlayers(createDefaultPlayers().map((p, i) => ({
-        ...p,
-        name: `Opponent ${i + 1}`,
-      })));
+      setOpponentPlayers(createDefaultPlayers());
     }
   }, [tournament, roundIndex]);
 
@@ -218,6 +215,7 @@ export function RoundSetupPage() {
                 });
               }
             }}
+            onFocus={(e) => e.target.select()}
             placeholder="e.g., Team Fierce"
             className={`
               w-full min-h-[44px] px-4 py-2
@@ -243,6 +241,7 @@ export function RoundSetupPage() {
                 index={index}
                 name={player.name}
                 faction={player.faction}
+                label={`Opponent ${index + 1}`}
                 onNameChange={(name) => handlePlayerNameChange(index, name)}
                 onFactionChange={(faction) => handlePlayerFactionChange(index, faction)}
                 error={errors[`player-${index}`]}

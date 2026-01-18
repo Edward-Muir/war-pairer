@@ -43,6 +43,7 @@ export function PlayerInput({
             id={`${inputId}-name`}
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
+            onFocus={(e) => e.target.select()}
             disabled={disabled}
             placeholder={displayLabel}
             aria-label={`${displayLabel} name`}

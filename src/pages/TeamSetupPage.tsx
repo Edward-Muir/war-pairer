@@ -137,6 +137,7 @@ export function TeamSetupPage() {
                 });
               }
             }}
+            onFocus={(e) => e.target.select()}
             placeholder="e.g., Brighton Warhogs"
             className={`
               w-full min-h-[44px] px-4 py-2
