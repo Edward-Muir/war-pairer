@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { MatrixCell } from './MatrixCell';
+import { ScorePickerCell } from '@/components/Inputs/ScorePickerCell';
+import { ScorePickerPopover } from '@/components/Inputs/ScorePickerPopover';
 import { MatrixRowEditor } from './MatrixRowEditor';
 import type { Player } from '@/store/types';
 
@@ -13,9 +14,16 @@ export interface MatrixGridProps {
   className?: string;
 }
 
+interface ActiveCell {
+  ourIndex: number;
+  oppIndex: number;
+  rect: DOMRect;
+}
+
 /**
  * 5x5 matchup matrix grid with sticky headers for mobile scrolling.
  * Each cell displays the expected score for our player (row) vs opponent (column).
+ * Tap a cell to open a compact score picker popover.
  */
 export function MatrixGrid({
   ourTeam,
@@ -26,6 +34,7 @@ export function MatrixGrid({
   className = '',
 }: MatrixGridProps) {
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
 
   const handleRowEdit = (ourIndex: number) => {
     setEditingRow(ourIndex);
@@ -39,6 +48,22 @@ export function MatrixGrid({
     if (editingRow !== null) {
       onScoreChange(editingRow, oppIndex, score);
     }
+  };
+
+  const handleCellTap = (ourIndex: number, oppIndex: number, rect: DOMRect) => {
+    if (disabled) return;
+    setActiveCell({ ourIndex, oppIndex, rect });
+  };
+
+  const handleCellSelect = (score: number) => {
+    if (activeCell) {
+      onScoreChange(activeCell.ourIndex, activeCell.oppIndex, score);
+      setActiveCell(null);
+    }
+  };
+
+  const handlePopoverClose = () => {
+    setActiveCell(null);
   };
 
   return (
@@ -88,10 +113,10 @@ export function MatrixGrid({
                       type="button"
                       onClick={() => handleRowEdit(ourIndex)}
                       disabled={disabled}
-                      className="p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:pointer-events-none"
                       aria-label={`Edit row for ${ourPlayer.name}`}
                     >
-                      <Pencil className="w-3.5 h-3.5" />
+                      <Pencil className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
@@ -101,13 +126,12 @@ export function MatrixGrid({
                     key={oppPlayer.id}
                     className="p-1 border-b border-gray-100"
                   >
-                    <MatrixCell
-                      score={scores[ourIndex]?.[oppIndex] ?? 10}
-                      onChange={(score) => onScoreChange(ourIndex, oppIndex, score)}
-                      ourPlayerName={ourPlayer.name}
-                      oppPlayerName={oppPlayer.name}
+                    <ScorePickerCell
+                      value={scores[ourIndex]?.[oppIndex] ?? 10}
+                      onTap={(rect) => handleCellTap(ourIndex, oppIndex, rect)}
                       disabled={disabled}
-                      size="sm"
+                      showColorCoding={true}
+                      aria-label={`${ourPlayer.name} vs ${oppPlayer.name}: ${scores[ourIndex]?.[oppIndex] ?? 10}`}
                     />
                   </td>
                 ))}
@@ -116,6 +140,15 @@ export function MatrixGrid({
           </tbody>
         </table>
       </div>
+
+      {/* Shared score picker popover */}
+      <ScorePickerPopover
+        isOpen={activeCell !== null}
+        value={activeCell ? scores[activeCell.ourIndex]?.[activeCell.oppIndex] ?? 10 : 10}
+        targetRect={activeCell?.rect ?? null}
+        onSelect={handleCellSelect}
+        onClose={handlePopoverClose}
+      />
 
       {/* Row editor bottom sheet */}
       {editingRow !== null && (
