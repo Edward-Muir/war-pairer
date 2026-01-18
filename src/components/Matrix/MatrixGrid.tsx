@@ -66,7 +66,7 @@ export function MatrixGrid({
 
   return (
     <>
-      <div className={`overflow-x-auto -mx-4 px-4 ${className}`}>
+      <div className={`overflow-x-auto ${className}`}>
         <table className="border-separate border-spacing-0 min-w-max">
           <thead>
             <tr>

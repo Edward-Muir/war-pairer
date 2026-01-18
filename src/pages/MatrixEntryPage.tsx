@@ -105,8 +105,8 @@ export function MatrixEntryPage() {
         </div>
       </div>
 
-      {/* Matrix grid - handles its own edge-to-edge scrolling */}
-      <div className="mt-4">
+      {/* Matrix grid */}
+      <div className="px-4 mt-4">
         <MatrixGrid
           ourTeam={tournament.ourTeam.players}
           oppTeam={round.opponentPlayers}
