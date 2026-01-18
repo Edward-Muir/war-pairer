@@ -7,6 +7,7 @@ import { TeamSetupPage } from '@/pages/TeamSetupPage';
 import { TournamentSetupPage } from '@/pages/TournamentSetupPage';
 import { RoundSetupPage } from '@/pages/RoundSetupPage';
 import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
+import { PairingPhasePage } from '@/pages/PairingPhasePage';
 
 // Placeholder pages - will be implemented in later phases
 function TournamentSummaryPage() {
@@ -14,22 +15,6 @@ function TournamentSummaryPage() {
     <Layout title="Tournament" showBack onBack={() => window.history.back()}>
       <div className="p-4">
         <p className="text-gray-600">Tournament summary page placeholder</p>
-      </div>
-    </Layout>
-  );
-}
-
-function PairingPhasePage() {
-  return (
-    <Layout
-      title="Pairing"
-      showBack
-      onBack={() => window.history.back()}
-      showNav={false}
-      currentPhase="defender-1-select"
-    >
-      <div className="p-4">
-        <p className="text-gray-600">Pairing phase page placeholder</p>
       </div>
     </Layout>
   );

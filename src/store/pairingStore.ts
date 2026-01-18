@@ -106,6 +106,46 @@ const phaseOrder: Phase[] = [
   'tournament-summary',
 ];
 
+// Helper to rebuild matrix and remaining players from tournament data
+function rebuildFromTournament(
+  tournamentId: string | null,
+  roundIndex: number | null,
+  pairings: Pairing[]
+): { matrix: MatchupMatrix | null; ourRemaining: Player[]; oppRemaining: Player[] } {
+  if (!tournamentId || roundIndex === null) {
+    return { matrix: null, ourRemaining: [], oppRemaining: [] };
+  }
+
+  const tournament = useTournamentStore.getState().getTournament(tournamentId);
+  if (!tournament) {
+    return { matrix: null, ourRemaining: [], oppRemaining: [] };
+  }
+
+  const round = tournament.rounds[roundIndex];
+  if (!round) {
+    return { matrix: null, ourRemaining: [], oppRemaining: [] };
+  }
+
+  const matrix: MatchupMatrix = {
+    ourTeam: [...tournament.ourTeam.players],
+    oppTeam: [...round.opponentPlayers],
+    scores: round.matrix,
+  };
+
+  // Remove already-paired players from remaining
+  const pairedOurIds = new Set(pairings.map((p) => p.ourPlayer.id));
+  const pairedOppIds = new Set(pairings.map((p) => p.oppPlayer.id));
+
+  const ourRemaining = tournament.ourTeam.players.filter(
+    (p) => !pairedOurIds.has(p.id)
+  );
+  const oppRemaining = round.opponentPlayers.filter(
+    (p) => !pairedOppIds.has(p.id)
+  );
+
+  return { matrix, ourRemaining, oppRemaining };
+}
+
 export const usePairingStore = create<PairingStore>()(
   persist(
     (set, get) => ({
@@ -260,8 +300,20 @@ export const usePairingStore = create<PairingStore>()(
         round1: state.round1,
         round2: state.round2,
         pairings: state.pairings,
-        // Note: matrix, ourRemaining, and oppRemaining will be rebuilt on rehydration
       }),
+      // Rebuild matrix and remaining players from tournament data after rehydration
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const { matrix, ourRemaining, oppRemaining } = rebuildFromTournament(
+            state.tournamentId,
+            state.roundIndex,
+            state.pairings
+          );
+          state.matrix = matrix;
+          state.ourRemaining = ourRemaining;
+          state.oppRemaining = oppRemaining;
+        }
+      },
     }
   )
 );
