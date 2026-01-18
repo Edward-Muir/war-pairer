@@ -49,3 +49,73 @@ export function formatScore(score: number): string {
 export function calculateTotalScore(scores: number[]): number {
   return scores.reduce((sum, score) => sum + score, 0);
 }
+
+/**
+ * Calculate round totals from pairings
+ */
+export function calculateRoundTotals(pairings: { expectedScore: number; actualScore?: number }[]): {
+  expectedTotal: number;
+  actualTotal: number | null;
+  allScoresEntered: boolean;
+} {
+  let expectedTotal = 0;
+  let actualTotal = 0;
+  let hasAnyActual = false;
+  let allEntered = pairings.length > 0;
+
+  for (const pairing of pairings) {
+    expectedTotal += pairing.expectedScore;
+    if (pairing.actualScore !== undefined) {
+      actualTotal += pairing.actualScore;
+      hasAnyActual = true;
+    } else {
+      allEntered = false;
+    }
+  }
+
+  return {
+    expectedTotal,
+    actualTotal: hasAnyActual ? actualTotal : null,
+    allScoresEntered: allEntered,
+  };
+}
+
+/**
+ * Calculate tournament-wide totals across all rounds
+ */
+export function calculateTournamentTotals(
+  rounds: { pairings: { expectedScore: number; actualScore?: number }[] }[]
+): {
+  expectedTotal: number;
+  actualTotal: number | null;
+  allScoresEntered: boolean;
+  roundsCompleted: number;
+} {
+  let expectedTotal = 0;
+  let actualTotal = 0;
+  let hasAnyActual = false;
+  let allEntered = true;
+  let roundsCompleted = 0;
+
+  for (const round of rounds) {
+    if (round.pairings.length > 0) {
+      roundsCompleted++;
+    }
+    for (const pairing of round.pairings) {
+      expectedTotal += pairing.expectedScore;
+      if (pairing.actualScore !== undefined) {
+        actualTotal += pairing.actualScore;
+        hasAnyActual = true;
+      } else {
+        allEntered = false;
+      }
+    }
+  }
+
+  return {
+    expectedTotal,
+    actualTotal: hasAnyActual ? actualTotal : null,
+    allScoresEntered: allEntered && rounds.length > 0 && roundsCompleted > 0,
+    roundsCompleted,
+  };
+}

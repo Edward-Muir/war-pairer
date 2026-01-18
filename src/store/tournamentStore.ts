@@ -26,6 +26,12 @@ interface TournamentActions {
   updateRoundMatrix: (tournamentId: string, roundIndex: number, matrix: number[][]) => void;
   completeRound: (tournamentId: string, roundIndex: number, pairings: Pairing[]) => void;
   advanceToNextRound: (tournamentId: string) => void;
+  updateActualScore: (
+    tournamentId: string,
+    roundIndex: number,
+    pairingIndex: number,
+    actualScore: number
+  ) => void;
 }
 
 type TournamentStore = TournamentState & TournamentActions;
@@ -150,6 +156,28 @@ export const useTournamentStore = create<TournamentStore>()(
           tournaments: state.tournaments.map((t) =>
             t.id === tournamentId
               ? { ...t, currentRoundIndex: t.currentRoundIndex + 1 }
+              : t
+          ),
+        }));
+      },
+
+      updateActualScore: (tournamentId, roundIndex, pairingIndex, actualScore) => {
+        set((state) => ({
+          tournaments: state.tournaments.map((t) =>
+            t.id === tournamentId
+              ? {
+                  ...t,
+                  rounds: t.rounds.map((r, i) =>
+                    i === roundIndex
+                      ? {
+                          ...r,
+                          pairings: r.pairings.map((p, pi) =>
+                            pi === pairingIndex ? { ...p, actualScore } : p
+                          ),
+                        }
+                      : r
+                  ),
+                }
               : t
           ),
         }));

@@ -348,7 +348,7 @@ This checklist breaks down all tasks into discrete items that can be completed a
 
 ### Phase 16: Summary Pages
 ```
-[ ] 16.1 Create src/pages/RoundSummaryPage.tsx
+[x] 16.1 Create src/pages/RoundSummaryPage.tsx
          - Table of all 5 pairings
          - Expected score per pairing
          - Total expected score
@@ -356,35 +356,41 @@ This checklist breaks down all tasks into discrete items that can be completed a
          - "Next Round" button (if rounds remain)
          - "Finish Tournament" button (if last round)
          - Save pairings to tournament store
-[ ] 16.2 Create src/pages/TournamentSummaryPage.tsx
+[x] 16.2 Create src/pages/TournamentSummaryPage.tsx
          - Accordion/list of all rounds
          - Per-round expected vs actual scores
          - Total tournament score
          - "Export Results" button
          - "New Tournament" button
          - "Back to Home" button
-[ ] 16.3 Wire up routes: /tournament/:id/round/:num/summary, /tournament/:id/summary
+[x] 16.3 Wire up routes: /tournament/:id/round/:num/summary, /tournament/:id/summary
+         Note: Routes already existed, replaced placeholder components
 [ ] 16.4 Test: Complete full tournament (all 5 rounds)
 ```
 
 ### Phase 17: Navigation & Flow Polish
 ```
-[ ] 17.1 Implement back button logic for all pages
+[x] 17.1 Implement back button logic for all pages
          - Context-aware: goes to logical previous step
          - Confirmation modal if abandoning pairing
-[ ] 17.2 Add phase indicator to pairing pages
+         Note: PairingPhasePage now uses previousPhaseMap for phase-aware navigation
+[x] 17.2 Add phase indicator to pairing pages
          - Show progress through 11 pairing phases
-[ ] 17.3 Add LockedPairingsDrawer to pairing pages
+         Note: Already implemented in PhaseIndicator.tsx and integrated in Layout
+[x] 17.3 Add LockedPairingsDrawer to pairing pages
          - Toggle button in header
          - Shows pairings locked so far
-[ ] 17.4 Implement "Resume" functionality on HomePage
+         Note: List icon with badge in header, opens LockedPairingsDrawer
+[x] 17.4 Implement "Resume" functionality on HomePage
          - Detect incomplete pairing session
          - Show "Resume Pairing" card
          - Navigate to correct phase on tap
-[ ] 17.5 Add confirmation modals for destructive actions
+         Note: Already implemented in HomePage.tsx
+[x] 17.5 Add confirmation modals for destructive actions
          - Delete team
          - Delete tournament
          - Abandon pairing
+         Note: Created ConfirmationModal component, replaced browser confirm()
 ```
 
 ### Phase 18: Mobile Optimization

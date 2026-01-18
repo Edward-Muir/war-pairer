@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
+import { ConfirmationModal } from '@/components/Common/ConfirmationModal';
 import { TeamCard } from '@/components/Cards/TeamCard';
 import { TournamentCard } from '@/components/Cards/TournamentCard';
 import { useTeamStore } from '@/store/teamStore';
@@ -10,6 +12,8 @@ import { usePairingStore } from '@/store/pairingStore';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
+  const [tournamentToDelete, setTournamentToDelete] = useState<string | null>(null);
   const { teams, deleteTeam } = useTeamStore();
   const { tournaments, deleteTournament, setActiveTournament } = useTournamentStore();
   const { tournamentId, roundIndex, phase } = usePairingStore();
@@ -46,8 +50,13 @@ export function HomePage() {
   };
 
   const handleDeleteTeam = (teamId: string) => {
-    if (confirm('Are you sure you want to delete this team?')) {
-      deleteTeam(teamId);
+    setTeamToDelete(teamId);
+  };
+
+  const handleConfirmDeleteTeam = () => {
+    if (teamToDelete) {
+      deleteTeam(teamToDelete);
+      setTeamToDelete(null);
     }
   };
 
@@ -64,8 +73,13 @@ export function HomePage() {
   };
 
   const handleDeleteTournament = (tournamentId: string) => {
-    if (confirm('Are you sure you want to delete this tournament?')) {
-      deleteTournament(tournamentId);
+    setTournamentToDelete(tournamentId);
+  };
+
+  const handleConfirmDeleteTournament = () => {
+    if (tournamentToDelete) {
+      deleteTournament(tournamentToDelete);
+      setTournamentToDelete(null);
     }
   };
 
@@ -163,6 +177,30 @@ export function HomePage() {
           )}
         </section>
       </div>
+
+      {/* Delete Team Confirmation */}
+      <ConfirmationModal
+        isOpen={teamToDelete !== null}
+        onClose={() => setTeamToDelete(null)}
+        onConfirm={handleConfirmDeleteTeam}
+        title="Delete Team?"
+        message="This will permanently delete the team and all its player data. This action cannot be undone."
+        confirmText="Delete Team"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Delete Tournament Confirmation */}
+      <ConfirmationModal
+        isOpen={tournamentToDelete !== null}
+        onClose={() => setTournamentToDelete(null)}
+        onConfirm={handleConfirmDeleteTournament}
+        title="Delete Tournament?"
+        message="This will permanently delete the tournament and all round data. This action cannot be undone."
+        confirmText="Delete Tournament"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </Layout>
   );
 }

@@ -8,28 +8,10 @@ import { TournamentSetupPage } from '@/pages/TournamentSetupPage';
 import { RoundSetupPage } from '@/pages/RoundSetupPage';
 import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
 import { PairingPhasePage } from '@/pages/PairingPhasePage';
+import { RoundSummaryPage } from '@/pages/RoundSummaryPage';
+import { TournamentSummaryPage } from '@/pages/TournamentSummaryPage';
 
 // Placeholder pages - will be implemented in later phases
-function TournamentSummaryPage() {
-  return (
-    <Layout title="Tournament" showBack onBack={() => window.history.back()}>
-      <div className="p-4">
-        <p className="text-gray-600">Tournament summary page placeholder</p>
-      </div>
-    </Layout>
-  );
-}
-
-function RoundSummaryPage() {
-  return (
-    <Layout title="Round Summary" showBack onBack={() => window.history.back()}>
-      <div className="p-4">
-        <p className="text-gray-600">Round summary page placeholder</p>
-      </div>
-    </Layout>
-  );
-}
-
 function SettingsPage() {
   return (
     <Layout title="Settings">

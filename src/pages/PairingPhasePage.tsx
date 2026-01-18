@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { List } from 'lucide-react';
 import { Layout } from '@/components/Layout';
+import { ConfirmationModal } from '@/components/Common/ConfirmationModal';
+import { LockedPairingsDrawer } from '@/components/Drawers/LockedPairingsDrawer';
 import { usePairingStore } from '@/store/pairingStore';
 import type { Phase } from '@/store/types';
 
@@ -40,6 +44,21 @@ const phaseTitles: Record<string, string> = {
   'final-pairing': 'Final Pairing',
 };
 
+// Phase-aware back navigation mapping
+const previousPhaseMap: Record<string, Phase | 'confirm-abandon'> = {
+  'defender-1-select': 'confirm-abandon', // First phase - show abandon confirmation
+  'defender-1-reveal': 'defender-1-select',
+  'attacker-1-select': 'defender-1-reveal',
+  'attacker-1-reveal': 'attacker-1-select',
+  'defender-1-choose': 'attacker-1-reveal',
+  'defender-2-select': 'defender-1-choose',
+  'defender-2-reveal': 'defender-2-select',
+  'attacker-2-select': 'defender-2-reveal',
+  'attacker-2-reveal': 'attacker-2-select',
+  'defender-2-choose': 'attacker-2-reveal',
+  'final-pairing': 'defender-2-choose',
+};
+
 export function PairingPhasePage() {
   const { id, roundIndex, phase } = useParams<{
     id: string;
@@ -47,7 +66,11 @@ export function PairingPhasePage() {
     phase: string;
   }>();
   const navigate = useNavigate();
-  const { setPhase, matrix } = usePairingStore();
+  const { setPhase, matrix, pairings, reset: resetPairingStore } = usePairingStore();
+
+  // UI state
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
+  const [showPairingsDrawer, setShowPairingsDrawer] = useState(false);
 
   const goToPhase = (nextPhase: Phase) => {
     setPhase(nextPhase);
@@ -59,13 +82,31 @@ export function PairingPhasePage() {
   };
 
   const goBack = () => {
-    navigate(-1);
+    const currentPhase = phase as Phase;
+    const previousPhase = previousPhaseMap[currentPhase];
+
+    if (previousPhase === 'confirm-abandon') {
+      // First pairing phase - show confirmation before abandoning
+      setShowAbandonConfirm(true);
+    } else if (previousPhase) {
+      // Navigate to previous pairing phase
+      setPhase(previousPhase);
+      navigate(`/tournament/${id}/round/${roundIndex}/pairing/${previousPhase}`);
+    } else {
+      // Unknown phase - fallback to matrix
+      navigate(`/tournament/${id}/round/${roundIndex}/matrix`);
+    }
+  };
+
+  const handleAbandonConfirm = () => {
+    resetPairingStore();
+    navigate(`/tournament/${id}/round/${roundIndex}/matrix`);
   };
 
   // Show error if no matrix loaded
   if (!matrix) {
     return (
-      <Layout title="Pairing" showBack onBack={goBack} showNav={false}>
+      <Layout title="Pairing" showBack onBack={() => navigate(-1)} showNav={false}>
         <div className="p-4">
           <p className="text-red-600">
             No pairing session found. Please start from the matrix entry page.
@@ -78,6 +119,22 @@ export function PairingPhasePage() {
   const currentPhase = phase as Phase;
   const title = phaseTitles[currentPhase] || 'Pairing';
   const round = phaseRound[currentPhase] as 1 | 2 | undefined;
+
+  // Header right action - toggle button for locked pairings drawer
+  const pairingsToggleButton = (
+    <button
+      onClick={() => setShowPairingsDrawer(true)}
+      className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+      aria-label={`View locked pairings (${pairings.length})`}
+    >
+      <List className="h-5 w-5" />
+      {pairings.length > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
+          {pairings.length}
+        </span>
+      )}
+    </button>
+  );
 
   // Render phase-specific content
   const renderContent = () => {
@@ -115,14 +172,36 @@ export function PairingPhasePage() {
   };
 
   return (
-    <Layout
-      title={title}
-      showBack
-      onBack={goBack}
-      showNav={false}
-      currentPhase={currentPhase}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout
+        title={title}
+        showBack
+        onBack={goBack}
+        showNav={false}
+        currentPhase={currentPhase}
+        rightAction={pairingsToggleButton}
+      >
+        {renderContent()}
+      </Layout>
+
+      {/* Abandon Pairing Confirmation */}
+      <ConfirmationModal
+        isOpen={showAbandonConfirm}
+        onClose={() => setShowAbandonConfirm(false)}
+        onConfirm={handleAbandonConfirm}
+        title="Abandon Pairing?"
+        message="Your pairing progress will be lost. You can start again from the matrix entry."
+        confirmText="Abandon"
+        cancelText="Continue Pairing"
+        variant="warning"
+      />
+
+      {/* Locked Pairings Drawer */}
+      <LockedPairingsDrawer
+        isOpen={showPairingsDrawer}
+        onClose={() => setShowPairingsDrawer(false)}
+        pairings={pairings}
+      />
+    </>
   );
 }

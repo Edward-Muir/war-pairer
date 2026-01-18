@@ -46,6 +46,21 @@ export async function importFromJson(
 }
 
 /**
+ * Export a single tournament to JSON
+ */
+export function exportTournamentToJson(tournament: Tournament): void {
+  const safeName = tournament.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const date = new Date().toISOString().split('T')[0];
+  const filename = `${safeName}-${date}.json`;
+  const data = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    tournament,
+  };
+  downloadFile(JSON.stringify(data, null, 2), filename, 'application/json');
+}
+
+/**
  * Trigger a file download in the browser
  */
 function downloadFile(
