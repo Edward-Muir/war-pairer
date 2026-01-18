@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { BottomSheet } from '@/components/Common/BottomSheet';
-import { ScoreInput } from '@/components/Inputs/ScoreInput';
+import { ScorePickerCell } from '@/components/Inputs/ScorePickerCell';
+import { ScorePickerPopover } from '@/components/Inputs/ScorePickerPopover';
 import { Button } from '@/components/Common/Button';
 import type { Player } from '@/store/types';
 
@@ -25,6 +27,15 @@ export function MatrixRowEditor({
   scores,
   onScoreChange,
 }: MatrixRowEditorProps) {
+  const [activeCell, setActiveCell] = useState<{ oppIndex: number } | null>(null);
+
+  const handleScoreSelect = (score: number) => {
+    if (activeCell) {
+      onScoreChange(activeCell.oppIndex, score);
+      setActiveCell(null);
+    }
+  };
+
   return (
     <BottomSheet
       isOpen={isOpen}
@@ -54,14 +65,12 @@ export function MatrixRowEditor({
                 </div>
               </div>
 
-              {/* Score input - larger size for touch */}
-              <ScoreInput
+              {/* Score picker cell - tap to open popover */}
+              <ScorePickerCell
                 value={scores[oppIndex] ?? 10}
-                onChange={(score) => onScoreChange(oppIndex, score)}
-                size="lg"
-                showColorCoding={true}
-                enableModal={true}
+                onTap={() => setActiveCell({ oppIndex })}
                 aria-label={`Score for ${ourPlayer.name} vs ${opponent.name}`}
+                className="w-14 h-14 text-xl"
               />
             </div>
           ))}
@@ -78,6 +87,16 @@ export function MatrixRowEditor({
           </Button>
         </div>
       </div>
+
+      {/* Score picker popover - shared across all cells */}
+      <ScorePickerPopover
+        isOpen={activeCell !== null}
+        value={activeCell ? scores[activeCell.oppIndex] ?? 10 : 10}
+        ourFaction={ourPlayer.faction}
+        oppFaction={activeCell ? oppTeam[activeCell.oppIndex]?.faction : undefined}
+        onSelect={handleScoreSelect}
+        onClose={() => setActiveCell(null)}
+      />
     </BottomSheet>
   );
 }

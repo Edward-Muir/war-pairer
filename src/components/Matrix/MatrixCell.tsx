@@ -30,7 +30,6 @@ export function MatrixCell({
         onChange={onChange}
         size={size}
         showColorCoding={true}
-        enableModal={true}
         disabled={disabled}
         aria-label={`Score for ${ourPlayerName} vs ${oppPlayerName}`}
       />

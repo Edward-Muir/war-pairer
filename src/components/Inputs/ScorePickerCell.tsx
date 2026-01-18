@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { scoreToBackgroundColor, scoreToTextColor } from '@/utils/scoring';
 import { useHaptic } from '@/hooks/useHaptic';
@@ -6,7 +5,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface ScorePickerCellProps {
   value: number;
-  onTap: (rect: DOMRect) => void;
+  onTap: () => void;
   disabled?: boolean;
   showColorCoding?: boolean;
   'aria-label'?: string;
@@ -15,7 +14,7 @@ export interface ScorePickerCellProps {
 
 /**
  * Compact 44x44px cell that displays a score value with color coding.
- * On tap, reports its position so a popover can be positioned near it.
+ * On tap, signals that the cell was tapped to open the score picker.
  */
 export function ScorePickerCell({
   value,
@@ -25,16 +24,13 @@ export function ScorePickerCell({
   'aria-label': ariaLabel,
   className = '',
 }: ScorePickerCellProps) {
-  const cellRef = useRef<HTMLButtonElement>(null);
   const { haptics } = useHaptic();
   const reducedMotion = useReducedMotion();
 
   const handleTap = () => {
     if (disabled) return;
     haptics.light();
-    if (cellRef.current) {
-      onTap(cellRef.current.getBoundingClientRect());
-    }
+    onTap();
   };
 
   const bgColor = showColorCoding ? scoreToBackgroundColor(value) : 'bg-gray-100';
@@ -42,7 +38,6 @@ export function ScorePickerCell({
 
   return (
     <motion.button
-      ref={cellRef}
       type="button"
       onClick={handleTap}
       disabled={disabled}

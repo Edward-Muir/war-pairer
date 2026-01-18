@@ -17,7 +17,6 @@ export interface MatrixGridProps {
 interface ActiveCell {
   ourIndex: number;
   oppIndex: number;
-  rect: DOMRect;
 }
 
 /**
@@ -50,9 +49,9 @@ export function MatrixGrid({
     }
   };
 
-  const handleCellTap = (ourIndex: number, oppIndex: number, rect: DOMRect) => {
+  const handleCellTap = (ourIndex: number, oppIndex: number) => {
     if (disabled) return;
-    setActiveCell({ ourIndex, oppIndex, rect });
+    setActiveCell({ ourIndex, oppIndex });
   };
 
   const handleCellSelect = (score: number) => {
@@ -128,7 +127,7 @@ export function MatrixGrid({
                   >
                     <ScorePickerCell
                       value={scores[ourIndex]?.[oppIndex] ?? 10}
-                      onTap={(rect) => handleCellTap(ourIndex, oppIndex, rect)}
+                      onTap={() => handleCellTap(ourIndex, oppIndex)}
                       disabled={disabled}
                       showColorCoding={true}
                       aria-label={`${ourPlayer.name} vs ${oppPlayer.name}: ${scores[ourIndex]?.[oppIndex] ?? 10}`}
@@ -145,7 +144,8 @@ export function MatrixGrid({
       <ScorePickerPopover
         isOpen={activeCell !== null}
         value={activeCell ? scores[activeCell.ourIndex]?.[activeCell.oppIndex] ?? 10 : 10}
-        targetRect={activeCell?.rect ?? null}
+        ourFaction={activeCell ? ourTeam[activeCell.ourIndex]?.faction : undefined}
+        oppFaction={activeCell ? oppTeam[activeCell.oppIndex]?.faction : undefined}
         onSelect={handleCellSelect}
         onClose={handlePopoverClose}
       />

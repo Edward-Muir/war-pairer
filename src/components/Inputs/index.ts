@@ -7,5 +7,11 @@ export type { PlayerInputProps } from './PlayerInput';
 export { ScoreInput } from './ScoreInput';
 export type { ScoreInputProps } from './ScoreInput';
 
+export { ScorePickerCell } from './ScorePickerCell';
+export type { ScorePickerCellProps } from './ScorePickerCell';
+
+export { ScorePickerPopover } from './ScorePickerPopover';
+export type { ScorePickerPopoverProps } from './ScorePickerPopover';
+
 export { PlayerPicker } from './PlayerPicker';
 export type { PlayerPickerProps } from './PlayerPicker';
