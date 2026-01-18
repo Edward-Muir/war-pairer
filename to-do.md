@@ -227,39 +227,39 @@ This checklist breaks down all tasks into discrete items that can be completed a
 
 ### Phase 11: Home & Team Pages
 ```
-[ ] 11.1 Create src/pages/HomePage.tsx
+[x] 11.1 Create src/pages/HomePage.tsx
          - "My Teams" section with TeamCard list
          - "Create New Team" button
          - "Tournaments" section with TournamentCard list
          - "New Tournament" button
          - Empty states for no teams/tournaments
          - "Resume Pairing" prompt if incomplete session exists
-[ ] 11.2 Create src/pages/TeamSetupPage.tsx
+[x] 11.2 Create src/pages/TeamSetupPage.tsx
          - Team name input at top
          - List of 5 PlayerInput components
          - "Save Team" button
          - Validation: all fields required
          - Edit mode: pre-populate from existing team
-[ ] 11.3 Wire up routes: / (home), /team/new, /team/:id/edit
-[ ] 11.4 Test: Create team, see it on home, edit it, delete it
+[x] 11.3 Wire up routes: / (home), /team/new, /team/:id/edit
+[x] 11.4 Test: Create team, see it on home, edit it, delete it
 ```
 
 ### Phase 12: Tournament Setup Pages
 ```
-[ ] 12.1 Create src/pages/TournamentSetupPage.tsx
+[x] 12.1 Create src/pages/TournamentSetupPage.tsx
          - Tournament name input
          - Number of rounds selector (default 5)
          - Team selector dropdown (from saved teams)
          - Selected team preview
          - "Start Tournament" button
-[ ] 12.2 Create src/pages/RoundSetupPage.tsx
+[x] 12.2 Create src/pages/RoundSetupPage.tsx
          - RoundIndicator at top ("Round 1 of 5")
          - "Our Team" collapsible section (read-only)
          - Opponent team name input
          - 5 PlayerInput components for opponent
          - "Continue to Matrix" button
-[ ] 12.3 Wire up routes: /tournament/new, /tournament/:id/round/:num/setup
-[ ] 12.4 Test: Create tournament, enter round 1 opponent details
+[x] 12.3 Wire up routes: /tournament/new, /tournament/:id/round/:num/setup
+[x] 12.4 Test: Create tournament, enter round 1 opponent details
 ```
 
 ### Phase 13: Matrix Entry Page
