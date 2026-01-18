@@ -88,7 +88,7 @@ export function ScorePickerPopover({
             role="dialog"
             aria-modal="true"
             aria-label="Select score"
-            className="fixed z-[101] bg-white rounded-3xl shadow-2xl p-6 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="fixed z-[101] bg-white rounded-3xl shadow-2xl p-4 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-48px)] max-w-80"
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
@@ -113,8 +113,8 @@ export function ScorePickerPopover({
               </div>
             )}
 
-            {/* Score grid - larger buttons */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Score grid */}
+            <div className="grid grid-cols-4 gap-2">
               {SCORE_VALUES.flat().map((scoreValue) => {
                 const bgColor = scoreToBackgroundColor(scoreValue);
                 const textColor = scoreToTextColor(scoreValue);
@@ -128,9 +128,9 @@ export function ScorePickerPopover({
                     whileTap={reducedMotion ? undefined : { scale: 0.92 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     className={`
-                      w-[72px] h-[72px] min-w-[72px] min-h-[72px]
+                      aspect-square
                       flex items-center justify-center
-                      rounded-2xl font-bold text-2xl
+                      rounded-2xl font-bold text-xl
                       ${bgColor} ${textColor}
                       ${isSelected ? 'ring-3 ring-blue-500 ring-offset-2' : ''}
                       transition-shadow

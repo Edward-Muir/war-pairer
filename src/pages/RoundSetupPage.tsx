@@ -92,16 +92,6 @@ export function RoundSetupPage() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!opponentTeamName.trim()) {
-      newErrors.opponentTeamName = 'Opponent team name is required';
-    }
-
-    opponentPlayers.forEach((player, index) => {
-      if (!player.name.trim()) {
-        newErrors[`player-${index}`] = 'Player name is required';
-      }
-    });
-
     // Validate unique factions for opponent team
     const factionValidation = validateUniqueFactions(opponentPlayers);
     if (!factionValidation.isValid) {
@@ -117,12 +107,12 @@ export function RoundSetupPage() {
   const handleContinue = () => {
     if (!validate()) return;
 
-    // Start the round with opponent data
+    // Start the round with opponent data, using defaults for empty names
     startRound({
-      opponentTeamName: opponentTeamName.trim(),
-      opponentPlayers: opponentPlayers.map((p) => ({
+      opponentTeamName: opponentTeamName.trim() || 'Opponent Team',
+      opponentPlayers: opponentPlayers.map((p, index) => ({
         ...p,
-        name: p.name.trim(),
+        name: p.name.trim() || `Opponent ${index + 1}`,
       })),
     });
 
