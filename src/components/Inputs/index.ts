@@ -1,6 +1,9 @@
 export { FactionAutocomplete } from './FactionAutocomplete';
 export type { FactionAutocompleteProps } from './FactionAutocomplete';
 
+export { FactionPickerModal } from './FactionPickerModal';
+export type { FactionPickerModalProps } from './FactionPickerModal';
+
 export { PlayerInput } from './PlayerInput';
 export type { PlayerInputProps } from './PlayerInput';
 
