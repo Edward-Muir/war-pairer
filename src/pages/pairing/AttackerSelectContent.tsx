@@ -3,9 +3,9 @@ import { Button } from '@/components/Common/Button';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { AttackerPairCard } from '@/components/Cards/AttackerPairCard';
 import { usePairingStore } from '@/store/pairingStore';
-import { analyzeAttackerPairs } from '@/algorithms/attackerAnalysis';
+import { analyzeAttackerPhase } from '@/algorithms/fullGameTheory';
 import type { Phase } from '@/store/types';
-import type { AttackerPairAnalysis } from '@/algorithms/attackerAnalysis';
+import type { FullAttackerAnalysis } from '@/algorithms/fullGameTheory';
 
 interface AttackerSelectContentProps {
   round: 1 | 2;
@@ -25,7 +25,7 @@ export function AttackerSelectContent({
     setOurAttackers2,
   } = usePairingStore();
 
-  const [selectedPair, setSelectedPair] = useState<AttackerPairAnalysis | null>(
+  const [selectedPair, setSelectedPair] = useState<FullAttackerAnalysis | null>(
     null
   );
 
@@ -40,15 +40,24 @@ export function AttackerSelectContent({
   // For round 2, only 2 players remain, so there's only 1 possible pair (auto-select)
   const isForced = availableAttackers.length === 2;
 
-  // Analyze attacker pair options (memoized to prevent unnecessary recalculations)
+  // Analyze attacker pair options with full game tree evaluation
   const analyses = useMemo(() => {
-    if (!matrix || !oppDefender) return [];
-    return analyzeAttackerPairs(
+    if (!matrix || !oppDefender || !ourDefender) return [];
+
+    // Get opponent players remaining (excluding their defender)
+    const oppAvailable = usePairingStore
+      .getState()
+      .oppRemaining.filter((p) => p.id !== oppDefender.id)
+      .map((p) => p.index);
+
+    return analyzeAttackerPhase(
       matrix.scores,
+      ourDefender.index,
       oppDefender.index,
-      availableAttackers.map((p) => p.index)
+      availableAttackers.map((p) => p.index),
+      oppAvailable
     );
-  }, [matrix, oppDefender, availableAttackers]);
+  }, [matrix, ourDefender, oppDefender, availableAttackers]);
 
   // Auto-select for forced pair
   useEffect(() => {

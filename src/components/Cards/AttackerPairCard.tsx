@@ -1,6 +1,7 @@
 import { Card } from '@/components/Common/Card'
 import type { Player } from '@/store/types'
 import type { AttackerPairAnalysis } from '@/algorithms/attackerAnalysis'
+import type { FullAttackerAnalysis } from '@/algorithms/fullGameTheory'
 import {
   scoreToBackgroundColor,
   scoreToTextColor,
@@ -8,7 +9,7 @@ import {
 } from '@/utils/scoring'
 
 export interface AttackerPairCardProps {
-  analysis: AttackerPairAnalysis
+  analysis: AttackerPairAnalysis | FullAttackerAnalysis
   ourPlayers: Player[]
   oppDefender: Player
   rank: number
@@ -17,6 +18,13 @@ export interface AttackerPairCardProps {
   disabled?: boolean
   onClick?: () => void
   className?: string
+}
+
+/** Type guard to check if analysis has full game theory data */
+function isFullAnalysis(
+  analysis: AttackerPairAnalysis | FullAttackerAnalysis
+): analysis is FullAttackerAnalysis {
+  return 'totalExpectedValue' in analysis
 }
 
 export function AttackerPairCard({
@@ -88,15 +96,34 @@ export function AttackerPairCard({
           })}
         </div>
 
-        {/* Expected Score and Opponent */}
+        {/* Expected Scores and Opponent */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Expected:</span>
-            <span
-              className={`inline-flex items-center rounded px-2 py-0.5 text-sm font-bold ${scoreToBackgroundColor(analysis.expectedScore)} ${scoreToTextColor(analysis.expectedScore)}`}
-            >
-              {formatScoreWithDelta(analysis.expectedScore)}
-            </span>
+            {isFullAnalysis(analysis) ? (
+              <>
+                {/* Total expected value (full tree) - prominent */}
+                <span className="text-sm text-gray-600">Total:</span>
+                <span
+                  className={`inline-flex items-center rounded px-2 py-0.5 text-sm font-bold ${scoreToBackgroundColor(analysis.totalExpectedValue)} ${scoreToTextColor(analysis.totalExpectedValue)}`}
+                  title="Total expected value including future rounds"
+                >
+                  {analysis.totalExpectedValue.toFixed(1)}
+                </span>
+                {/* Immediate score - secondary */}
+                <span className="text-xs text-gray-400">
+                  (this: {formatScoreWithDelta(analysis.expectedScore)})
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-sm text-gray-600">Expected:</span>
+                <span
+                  className={`inline-flex items-center rounded px-2 py-0.5 text-sm font-bold ${scoreToBackgroundColor(analysis.expectedScore)} ${scoreToTextColor(analysis.expectedScore)}`}
+                >
+                  {formatScoreWithDelta(analysis.expectedScore)}
+                </span>
+              </>
+            )}
           </div>
           <span className="truncate text-sm text-gray-500">
             vs {oppDefender.name}
