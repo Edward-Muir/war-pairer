@@ -1,11 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { MatchupPreview } from '@/components/Display/MatchupPreview';
 import { RoundIndicator } from '@/components/Display/RoundIndicator';
-import { ScoreInput } from '@/components/Inputs/ScoreInput';
+import { ScorePickerCell } from '@/components/Inputs/ScorePickerCell';
+import { ScorePickerPopover } from '@/components/Inputs/ScorePickerPopover';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
 import { useTournamentStore } from '@/store/tournamentStore';
@@ -33,6 +34,9 @@ export function RoundSummaryPage() {
     useTournamentStore();
   const tournament = getTournament(id ?? '');
   const round = tournament?.rounds[roundIndex];
+
+  // State for score picker popover
+  const [activePairingIndex, setActivePairingIndex] = useState<number | null>(null);
 
   // Use session pairings if we just completed pairing, otherwise load from tournament
   const isFromSession =
@@ -68,10 +72,11 @@ export function RoundSummaryPage() {
   );
 
   // Handlers
-  const handleActualScoreChange = (pairingIndex: number, score: number) => {
-    if (id) {
-      updateActualScore(id, roundIndex, pairingIndex, score);
+  const handleScoreSelect = (score: number) => {
+    if (activePairingIndex !== null && id) {
+      updateActualScore(id, roundIndex, activePairingIndex, score);
     }
+    setActivePairingIndex(null);
   };
 
   const handleNextRound = () => {
@@ -159,10 +164,9 @@ export function RoundSummaryPage() {
                 {/* Actual score input */}
                 <div className="flex items-center justify-end gap-2">
                   <span className="text-xs text-gray-500">Actual:</span>
-                  <ScoreInput
+                  <ScorePickerCell
                     value={pairing.actualScore ?? 10}
-                    onChange={(score) => handleActualScoreChange(index, score)}
-                    size="sm"
+                    onTap={() => setActivePairingIndex(index)}
                     showColorCoding
                     aria-label={`Actual score for ${pairing.ourPlayer.name} vs ${pairing.oppPlayer.name}`}
                   />
@@ -227,6 +231,16 @@ export function RoundSummaryPage() {
           </Button>
         </div>
       </div>
+
+      {/* Score picker popover - shared across all pairings */}
+      <ScorePickerPopover
+        isOpen={activePairingIndex !== null}
+        value={activePairingIndex !== null ? (pairings[activePairingIndex]?.actualScore ?? 10) : 10}
+        ourFaction={activePairingIndex !== null ? pairings[activePairingIndex]?.ourPlayer.faction : undefined}
+        oppFaction={activePairingIndex !== null ? pairings[activePairingIndex]?.oppPlayer.faction : undefined}
+        onSelect={handleScoreSelect}
+        onClose={() => setActivePairingIndex(null)}
+      />
     </Layout>
   );
 }
