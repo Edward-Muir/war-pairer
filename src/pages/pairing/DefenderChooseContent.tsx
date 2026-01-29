@@ -81,147 +81,145 @@ export function DefenderChooseContent({
   const isValid = ourChoice && oppChoice;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto p-4 space-y-6">
-        {/* Our Defender's Choice Section */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Our Defender Chooses
-          </h3>
-          <Card className="p-4">
-            <div className="text-center mb-4">
-              <div className="font-semibold text-gray-900">
-                {ourDefender.name}
-              </div>
-              <div className="text-sm text-gray-500">
-                {ourDefender.faction}
-              </div>
+    <div className="p-4 space-y-6">
+      {/* Our Defender's Choice Section */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">
+          Our Defender Chooses
+        </h3>
+        <Card className="p-4">
+          <div className="text-center mb-4">
+            <div className="font-semibold text-gray-900">
+              {ourDefender.name}
             </div>
+            <div className="text-sm text-gray-500">
+              {ourDefender.faction}
+            </div>
+          </div>
 
-            <p className="text-sm text-gray-600 mb-4">
-              The opponent sent these 2 attackers. Choose which one to face:
-            </p>
+          <p className="text-sm text-gray-600 mb-4">
+            The opponent sent these 2 attackers. Choose which one to face:
+          </p>
 
-            <div className="space-y-2">
-              {oppAttackers.map((attacker) => {
-                const score = getScoreVsAttacker(attacker);
-                const isRecommended = attacker.id === recommendedOurChoice.id;
-                const isSelected = ourChoice?.id === attacker.id;
+          <div className="space-y-2">
+            {oppAttackers.map((attacker) => {
+              const score = getScoreVsAttacker(attacker);
+              const isRecommended = attacker.id === recommendedOurChoice.id;
+              const isSelected = ourChoice?.id === attacker.id;
 
-                return (
-                  <Card
-                    key={attacker.id}
-                    onClick={() => setOurChoice(attacker)}
-                    selected={isSelected}
-                    className="p-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">
-                              {attacker.name}
+              return (
+                <Card
+                  key={attacker.id}
+                  onClick={() => setOurChoice(attacker)}
+                  selected={isSelected}
+                  className="p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900">
+                            {attacker.name}
+                          </span>
+                          {isRecommended && (
+                            <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
+                              Better
                             </span>
-                            {isRecommended && (
-                              <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
-                                Better
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {attacker.faction}
-                          </div>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {attacker.faction}
                         </div>
                       </div>
-                      <ScoreBadge score={score} showDelta />
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
+                    <ScoreBadge score={score} showDelta />
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
 
-        {/* Opponent Defender's Choice Section */}
+      {/* Opponent Defender's Choice Section */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">
+          Opponent's Defender Chooses
+        </h3>
+        <Card className="p-4">
+          <div className="text-center mb-4">
+            <div className="font-semibold text-gray-900">
+              {oppDefender.name}
+            </div>
+            <div className="text-sm text-gray-500">
+              {oppDefender.faction}
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">
+            We sent these 2 attackers. Which one did the opponent choose to
+            face?
+          </p>
+
+          <div className="space-y-2 mb-4">
+            {ourAttackers.map((attacker) => {
+              const score = getAttackerScoreVsDefender(attacker);
+              return (
+                <PlayerCard
+                  key={attacker.id}
+                  player={attacker}
+                  score={score}
+                  selected={oppChoice?.id === attacker.id}
+                  onClick={() => setOppChoice(attacker)}
+                />
+              );
+            })}
+          </div>
+
+          <div className="text-sm text-gray-500">
+            <em>
+              Note: Opponent will typically choose the matchup that's worse
+              for you (lower score).
+            </em>
+          </div>
+        </Card>
+      </div>
+
+      {/* Summary of Pairings to Lock */}
+      {isValid && (
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Opponent's Defender Chooses
+            Pairings to Lock
           </h3>
-          <Card className="p-4">
-            <div className="text-center mb-4">
-              <div className="font-semibold text-gray-900">
-                {oppDefender.name}
-              </div>
-              <div className="text-sm text-gray-500">
-                {oppDefender.faction}
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-600 mb-4">
-              We sent these 2 attackers. Which one did the opponent choose to
-              face?
-            </p>
-
-            <div className="space-y-2 mb-4">
-              {ourAttackers.map((attacker) => {
-                const score = getAttackerScoreVsDefender(attacker);
-                return (
-                  <PlayerCard
-                    key={attacker.id}
-                    player={attacker}
-                    score={score}
-                    selected={oppChoice?.id === attacker.id}
-                    onClick={() => setOppChoice(attacker)}
-                  />
-                );
-              })}
-            </div>
-
-            <div className="text-sm text-gray-500">
-              <em>
-                Note: Opponent will typically choose the matchup that's worse
-                for you (lower score).
-              </em>
-            </div>
-          </Card>
-        </div>
-
-        {/* Summary of Pairings to Lock */}
-        {isValid && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">
-              Pairings to Lock
-            </h3>
-            <div className="space-y-2">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold">{ourDefender.name}</span>
-                    <span className="text-gray-500"> vs </span>
-                    <span className="font-semibold">{ourChoice.name}</span>
-                  </div>
-                  <ScoreBadge score={getScoreVsAttacker(ourChoice)} showDelta />
+          <div className="space-y-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-semibold">{ourDefender.name}</span>
+                  <span className="text-gray-500"> vs </span>
+                  <span className="font-semibold">{ourChoice.name}</span>
                 </div>
+                <ScoreBadge score={getScoreVsAttacker(ourChoice)} showDelta />
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold">{oppChoice.name}</span>
-                    <span className="text-gray-500"> vs </span>
-                    <span className="font-semibold">{oppDefender.name}</span>
-                  </div>
-                  <ScoreBadge
-                    score={getAttackerScoreVsDefender(oppChoice)}
-                    showDelta
-                  />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-semibold">{oppChoice.name}</span>
+                  <span className="text-gray-500"> vs </span>
+                  <span className="font-semibold">{oppDefender.name}</span>
                 </div>
+                <ScoreBadge
+                  score={getAttackerScoreVsDefender(oppChoice)}
+                  showDelta
+                />
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
         <Button
           variant="primary"
           fullWidth

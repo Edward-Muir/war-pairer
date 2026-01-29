@@ -97,60 +97,58 @@ export function AttackerSelectContent({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        {/* Target Defender */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">
-            Target: Opponent's Defender
-          </h3>
-          <PlayerCard player={oppDefender} />
-        </div>
+    <div className="p-4 space-y-4">
+      {/* Target Defender */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 mb-2">
+          Target: Opponent's Defender
+        </h3>
+        <PlayerCard player={oppDefender} />
+      </div>
 
-        {/* Attacker Options */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-2">
-            {isForced
-              ? 'Your Attackers (Forced)'
-              : `Select 2 Attackers (${analyses.length} possible pairs)`}
-          </h3>
+      {/* Attacker Options */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-500 mb-2">
+          {isForced
+            ? 'Your Attackers (Forced)'
+            : `Select 2 Attackers (${analyses.length} possible pairs)`}
+        </h3>
 
-          {isForced && (
-            <p className="text-sm text-gray-600 mb-4">
-              With only 2 players remaining, this pair is automatically
-              selected.
-            </p>
-          )}
+        {isForced && (
+          <p className="text-sm text-gray-600 mb-4">
+            With only 2 players remaining, this pair is automatically
+            selected.
+          </p>
+        )}
 
-          {!isForced && (
-            <p className="text-sm text-gray-600 mb-4">
-              Choose which pair of attackers to send against the opponent's
-              defender. The opponent will choose which attacker faces their
-              defender (picking the one worse for you).
-            </p>
-          )}
+        {!isForced && (
+          <p className="text-sm text-gray-600 mb-4">
+            Choose which pair of attackers to send against the opponent's
+            defender. The opponent will choose which attacker faces their
+            defender (picking the one worse for you).
+          </p>
+        )}
 
-          <div className="space-y-3">
-            {analyses.map((analysis, idx) => (
-              <AttackerPairCard
-                key={`${analysis.attackers[0]}-${analysis.attackers[1]}`}
-                analysis={analysis}
-                ourPlayers={ourRemaining}
-                oppDefender={oppDefender}
-                rank={idx + 1}
-                selected={
-                  selectedPair?.attackers[0] === analysis.attackers[0] &&
-                  selectedPair?.attackers[1] === analysis.attackers[1]
-                }
-                onClick={() => setSelectedPair(analysis)}
-                disabled={isForced && idx > 0}
-              />
-            ))}
-          </div>
+        <div className="space-y-3">
+          {analyses.map((analysis, idx) => (
+            <AttackerPairCard
+              key={`${analysis.attackers[0]}-${analysis.attackers[1]}`}
+              analysis={analysis}
+              ourPlayers={ourRemaining}
+              oppDefender={oppDefender}
+              rank={idx + 1}
+              selected={
+                selectedPair?.attackers[0] === analysis.attackers[0] &&
+                selectedPair?.attackers[1] === analysis.attackers[1]
+              }
+              onClick={() => setSelectedPair(analysis)}
+              disabled={isForced && idx > 0}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-200 bg-white">
+      <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
         <Button
           variant="primary"
           fullWidth
