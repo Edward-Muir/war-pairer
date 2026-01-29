@@ -3,6 +3,7 @@ import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { PlayerPicker } from '@/components/Inputs/PlayerPicker';
+import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
 import type { Phase, Player } from '@/store/types';
 
@@ -19,6 +20,7 @@ export function AttackerRevealContent({
     oppRemaining,
     round1,
     round2,
+    getExpectedScore,
     setOppAttackers1,
     setOppAttackers2,
   } = usePairingStore();
@@ -67,6 +69,18 @@ export function AttackerRevealContent({
 
   const isValid = oppAttacker1 && oppAttacker2 && oppAttacker1.id !== oppAttacker2.id;
 
+  // Calculate expected scores for opponent's attackers vs our defender
+  const opp1Score = oppAttacker1 ? getExpectedScore(ourDefender.index, oppAttacker1.index) : null;
+  const opp2Score = oppAttacker2 ? getExpectedScore(ourDefender.index, oppAttacker2.index) : null;
+
+  // Determine which attacker is forced (opponent will pick the one with lower score for us)
+  const forcedAttacker = opp1Score !== null && opp2Score !== null
+    ? (opp1Score <= opp2Score ? oppAttacker1 : oppAttacker2)
+    : null;
+  const expectedScore = opp1Score !== null && opp2Score !== null
+    ? Math.min(opp1Score, opp2Score)
+    : null;
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto p-4 space-y-6">
@@ -93,9 +107,23 @@ export function AttackerRevealContent({
                 Only 2 opponent players remain - they are automatically the
                 attackers:
               </p>
-              {availableOppAttackers.map((player) => (
-                <PlayerCard key={player.id} player={player} />
-              ))}
+              {availableOppAttackers.map((player) => {
+                const score = getExpectedScore(ourDefender.index, player.index);
+                const isForced = forcedAttacker?.id === player.id;
+                return (
+                  <div key={player.id} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <PlayerCard player={player} />
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                      <ScoreBadge score={score} size="sm" showDelta />
+                      {isForced && (
+                        <span className="text-xs text-red-600">Forced</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <Card className="p-4">
@@ -149,12 +177,31 @@ export function AttackerRevealContent({
                   THEM → Our Defender
                 </div>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center text-sm">
-                  <div>{oppAttacker1?.name}</div>
-                  <div>{oppAttacker2?.name}</div>
+                  <div className={forcedAttacker?.id === oppAttacker1?.id ? 'font-bold' : ''}>
+                    {oppAttacker1?.name}
+                    {opp1Score !== null && <span className="text-gray-500 ml-1">({opp1Score})</span>}
+                    {forcedAttacker?.id === oppAttacker1?.id && <span className="text-red-600 ml-1">*</span>}
+                  </div>
+                  <div className={forcedAttacker?.id === oppAttacker2?.id ? 'font-bold' : ''}>
+                    {oppAttacker2?.name}
+                    {opp2Score !== null && <span className="text-gray-500 ml-1">({opp2Score})</span>}
+                    {forcedAttacker?.id === oppAttacker2?.id && <span className="text-red-600 ml-1">*</span>}
+                  </div>
                   <div className="text-gray-500 mt-1">→ {ourDefender.name}</div>
+                  {expectedScore !== null && (
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                      <span className="text-xs text-gray-500">Expected:</span>
+                      <ScoreBadge score={expectedScore} size="sm" showDelta />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+            {forcedAttacker && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                * Opponent will choose {forcedAttacker.name} to face {ourDefender.name}
+              </p>
+            )}
           </div>
         )}
       </div>
