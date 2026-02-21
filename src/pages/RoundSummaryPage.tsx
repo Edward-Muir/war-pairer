@@ -168,7 +168,7 @@ export function RoundSummaryPage() {
                     value={pairing.actualScore ?? 10}
                     onTap={() => setActivePairingIndex(index)}
                     showColorCoding
-                    aria-label={`Actual score for ${pairing.ourPlayer.name} vs ${pairing.oppPlayer.name}`}
+                    aria-label={`Actual score for ${pairing.ourPlayer.name} vs ${pairing.oppPlayer.faction}`}
                   />
                 </div>
               </div>

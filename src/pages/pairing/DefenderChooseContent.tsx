@@ -119,16 +119,13 @@ export function DefenderChooseContent({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-gray-900">
-                            {attacker.name}
+                            {attacker.faction}
                           </span>
                           {isRecommended && (
                             <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
                               Better
                             </span>
                           )}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {attacker.faction}
                         </div>
                       </div>
                     </div>
@@ -149,9 +146,6 @@ export function DefenderChooseContent({
         <Card className="p-4">
           <div className="text-center mb-4">
             <div className="font-semibold text-gray-900">
-              {oppDefender.name}
-            </div>
-            <div className="text-sm text-gray-500">
               {oppDefender.faction}
             </div>
           </div>
@@ -197,7 +191,7 @@ export function DefenderChooseContent({
                 <div>
                   <span className="font-semibold">{ourDefender.name}</span>
                   <span className="text-gray-500"> vs </span>
-                  <span className="font-semibold">{ourChoice.name}</span>
+                  <span className="font-semibold">{ourChoice.faction}</span>
                 </div>
                 <ScoreBadge score={getScoreVsAttacker(ourChoice)} showDelta />
               </div>
@@ -207,7 +201,7 @@ export function DefenderChooseContent({
                 <div>
                   <span className="font-semibold">{oppChoice.name}</span>
                   <span className="text-gray-500"> vs </span>
-                  <span className="font-semibold">{oppDefender.name}</span>
+                  <span className="font-semibold">{oppDefender.faction}</span>
                 </div>
                 <ScoreBadge
                   score={getAttackerScoreVsDefender(oppChoice)}

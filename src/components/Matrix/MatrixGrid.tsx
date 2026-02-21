@@ -81,7 +81,7 @@ export function MatrixGrid({
                 <th
                   key={player.id}
                   className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200 h-[100px] w-[52px] p-0 align-bottom"
-                  title={`${player.name} - ${player.faction}`}
+                  title={player.faction}
                 >
                   <div className="h-full flex items-end justify-center pb-1">
                     <div
@@ -92,7 +92,6 @@ export function MatrixGrid({
                       }}
                     >
                       <span className="text-xs font-semibold text-gray-700">{player.faction}</span>
-                      <span className="text-[10px] text-gray-400">{player.name}</span>
                     </div>
                   </div>
                 </th>
@@ -132,7 +131,7 @@ export function MatrixGrid({
                       onTap={() => handleCellTap(ourIndex, oppIndex)}
                       disabled={disabled}
                       showColorCoding={true}
-                      aria-label={`${ourPlayer.name} vs ${oppPlayer.name}: ${scores[ourIndex]?.[oppIndex] ?? 10}`}
+                      aria-label={`${ourPlayer.name} vs ${oppPlayer.faction}: ${scores[ourIndex]?.[oppIndex] ?? 10}`}
                     />
                   </td>
                 ))}

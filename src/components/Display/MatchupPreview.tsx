@@ -47,7 +47,7 @@ export function MatchupPreview({
         </span>
         <span className="text-xs text-gray-400">vs</span>
         <span className="min-w-0 flex-1 truncate text-right text-sm text-gray-600">
-          {oppPlayer.name}
+          {oppPlayer.faction}
         </span>
         <ScoreBadge score={expectedScore} size="sm" />
         {actualScore !== undefined && (
@@ -89,9 +89,8 @@ export function MatchupPreview({
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-gray-900">
-              {oppPlayer.name}
+              {oppPlayer.faction}
             </p>
-            <p className="truncate text-xs text-gray-500">{oppPlayer.faction}</p>
           </div>
           <PlayerIcon index={oppPlayer.index} />
         </div>

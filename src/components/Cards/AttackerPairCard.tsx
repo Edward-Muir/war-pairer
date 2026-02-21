@@ -126,7 +126,7 @@ export function AttackerPairCard({
             )}
           </div>
           <span className="truncate text-sm text-gray-500">
-            vs {oppDefender.name}
+            vs {oppDefender.faction}
           </span>
         </div>
       </div>

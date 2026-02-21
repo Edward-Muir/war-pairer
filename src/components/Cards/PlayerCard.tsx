@@ -10,6 +10,7 @@ export interface PlayerCardProps {
   onClick?: () => void
   className?: string
   showIndex?: boolean
+  isOpponent?: boolean
 }
 
 export function PlayerCard({
@@ -20,6 +21,7 @@ export function PlayerCard({
   onClick,
   className = '',
   showIndex = true,
+  isOpponent = false,
 }: PlayerCardProps) {
   const disabledStyles = disabled ? 'opacity-50 pointer-events-none' : ''
 
@@ -37,9 +39,11 @@ export function PlayerCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="truncate font-semibold text-gray-900">
-            {player.name}
+            {isOpponent ? player.faction : player.name}
           </div>
-          <div className="truncate text-sm text-gray-600">{player.faction}</div>
+          {!isOpponent && (
+            <div className="truncate text-sm text-gray-600">{player.faction}</div>
+          )}
         </div>
         {score !== undefined && (
           <div

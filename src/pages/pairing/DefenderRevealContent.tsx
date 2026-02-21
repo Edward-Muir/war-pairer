@@ -91,6 +91,7 @@ export function DefenderRevealContent({
             placeholder="Select opponent's defender..."
             label="Opponent's Defender"
             useModal
+            isOpponent
           />
         </Card>
       </div>
@@ -119,9 +120,6 @@ export function DefenderRevealContent({
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
                 <div className="font-semibold text-gray-900">
-                  {selectedOppDefender.name}
-                </div>
-                <div className="text-sm text-gray-600">
                   {selectedOppDefender.faction}
                 </div>
               </div>
@@ -139,7 +137,7 @@ export function DefenderRevealContent({
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm text-gray-600">
-                vs {selectedOppDefender.name}
+                vs {selectedOppDefender.faction}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Expected:</span>

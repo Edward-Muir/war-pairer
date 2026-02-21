@@ -127,7 +127,7 @@ export function AttackerRevealContent({
       mistakeMagnitude,
       playedOptimally: Math.abs(mistakeMagnitude) < 0.01,
       optimalPairNames: oppOptimal.attackers.map(idx =>
-        availableOppAttackers.find(p => p.index === idx)?.name
+        availableOppAttackers.find(p => p.index === idx)?.faction
       ),
     };
   }, [oppAttackerAnalyses, oppOptimal, oppAttacker1, oppAttacker2, availableOppAttackers]);
@@ -137,7 +137,7 @@ export function AttackerRevealContent({
       {/* Our Attackers */}
       <div>
         <h3 className="text-sm font-medium text-gray-500 mb-2">
-          Our Attackers (vs {oppDefender.name})
+          Our Attackers (vs {oppDefender.faction})
         </h3>
         <div className="space-y-2">
           <PlayerCard player={ourAttackers[0]} />
@@ -163,7 +163,7 @@ export function AttackerRevealContent({
               return (
                 <div key={player.id} className="flex items-center gap-2">
                   <div className="flex-1">
-                    <PlayerCard player={player} />
+                    <PlayerCard player={player} isOpponent />
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <ScoreBadge score={score} size="sm" showDelta />
@@ -189,6 +189,7 @@ export function AttackerRevealContent({
                 placeholder="Select first attacker..."
                 label="First Attacker"
                 useModal
+                isOpponent
                 disabledPlayers={oppAttacker2 ? [oppAttacker2] : []}
               />
               <PlayerPicker
@@ -198,6 +199,7 @@ export function AttackerRevealContent({
                 placeholder="Select second attacker..."
                 label="Second Attacker"
                 useModal
+                isOpponent
                 disabledPlayers={oppAttacker1 ? [oppAttacker1] : []}
               />
             </div>
@@ -217,7 +219,7 @@ export function AttackerRevealContent({
           </div>
           <div className="text-xs text-amber-600 mt-1">
             Optimal pair: {oppOptimal.attackers.map(idx =>
-              availableOppAttackers.find(p => p.index === idx)?.name
+              availableOppAttackers.find(p => p.index === idx)?.faction
             ).join(' + ')}
           </div>
         </Card>
@@ -255,7 +257,7 @@ export function AttackerRevealContent({
               <div className="text-xs text-gray-500 mb-1">Their Selection</div>
               <ScoreBadge score={opponentComparison.actualScoreForUs} size="sm" showDelta />
               <div className="text-xs text-gray-500 mt-1">
-                ({oppAttacker1?.name} + {oppAttacker2?.name})
+                ({oppAttacker1?.faction} + {oppAttacker2?.faction})
               </div>
             </div>
           </div>
@@ -276,7 +278,7 @@ export function AttackerRevealContent({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center text-sm">
                 <div>{ourAttackers[0].name}</div>
                 <div>{ourAttackers[1].name}</div>
-                <div className="text-gray-500 mt-1">→ {oppDefender.name}</div>
+                <div className="text-gray-500 mt-1">→ {oppDefender.faction}</div>
               </div>
             </div>
             <div>
@@ -285,12 +287,12 @@ export function AttackerRevealContent({
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center text-sm">
                 <div className={forcedAttacker?.id === oppAttacker1?.id ? 'font-bold' : ''}>
-                  {oppAttacker1?.name}
+                  {oppAttacker1?.faction}
                   {opp1Score !== null && <span className="text-gray-500 ml-1">({opp1Score})</span>}
                   {forcedAttacker?.id === oppAttacker1?.id && <span className="text-red-600 ml-1">*</span>}
                 </div>
                 <div className={forcedAttacker?.id === oppAttacker2?.id ? 'font-bold' : ''}>
-                  {oppAttacker2?.name}
+                  {oppAttacker2?.faction}
                   {opp2Score !== null && <span className="text-gray-500 ml-1">({opp2Score})</span>}
                   {forcedAttacker?.id === oppAttacker2?.id && <span className="text-red-600 ml-1">*</span>}
                 </div>
@@ -306,7 +308,7 @@ export function AttackerRevealContent({
           </div>
           {forcedAttacker && (
             <p className="text-xs text-gray-500 mt-2 text-center">
-              * Opponent will choose {forcedAttacker.name} to face {ourDefender.name}
+              * Opponent will choose {forcedAttacker.faction} to face {ourDefender.name}
             </p>
           )}
         </div>

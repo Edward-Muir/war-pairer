@@ -58,9 +58,6 @@ export function MatrixRowEditor({
               {/* Opponent info */}
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 truncate">
-                  {opponent.name}
-                </div>
-                <div className="text-sm text-gray-500 truncate">
                   {opponent.faction}
                 </div>
               </div>
@@ -69,7 +66,7 @@ export function MatrixRowEditor({
               <ScorePickerCell
                 value={scores[oppIndex] ?? 10}
                 onTap={() => setActiveCell({ oppIndex })}
-                aria-label={`Score for ${ourPlayer.name} vs ${opponent.name}`}
+                aria-label={`Score for ${ourPlayer.name} vs ${opponent.faction}`}
                 className="w-14 h-14 text-xl"
               />
             </div>

@@ -13,6 +13,7 @@ export interface PlayerPickerProps {
   disabled?: boolean;
   disabledPlayers?: Player[];
   className?: string;
+  isOpponent?: boolean;
 }
 
 export function PlayerPicker({
@@ -25,6 +26,7 @@ export function PlayerPicker({
   disabled = false,
   disabledPlayers = [],
   className = '',
+  isOpponent = false,
 }: PlayerPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,8 +80,8 @@ export function PlayerPicker({
             `}
           >
             <div className="flex flex-col items-start">
-              <span className="font-medium text-gray-900">{player.name}</span>
-              <span className="text-sm text-gray-500">{player.faction}</span>
+              <span className="font-medium text-gray-900">{isOpponent ? player.faction : player.name}</span>
+              {!isOpponent && <span className="text-sm text-gray-500">{player.faction}</span>}
             </div>
             {isSelected && <Check className="w-5 h-5 text-blue-600 flex-shrink-0" />}
           </button>
@@ -113,8 +115,8 @@ export function PlayerPicker({
       >
         {value ? (
           <div className="flex flex-col items-start min-w-0">
-            <span className="font-medium text-gray-900 truncate">{value.name}</span>
-            <span className="text-sm text-gray-500 truncate">{value.faction}</span>
+            <span className="font-medium text-gray-900 truncate">{isOpponent ? value.faction : value.name}</span>
+            {!isOpponent && <span className="text-sm text-gray-500 truncate">{value.faction}</span>}
           </div>
         ) : (
           <span className="text-gray-400">{placeholder}</span>

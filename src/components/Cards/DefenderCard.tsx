@@ -41,7 +41,7 @@ export function DefenderCard({
   const worstMatchupNames = analysis.worstMatchups
     .map((idx) => opponentPlayers.find((p) => p.index === idx))
     .filter((p): p is Player => p !== undefined)
-    .map((p) => p.name)
+    .map((p) => p.faction)
 
   return (
     <Card

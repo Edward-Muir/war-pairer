@@ -103,7 +103,7 @@ export function AttackerSelectContent({
         <h3 className="text-sm font-medium text-gray-500 mb-2">
           Target: Opponent's Defender
         </h3>
-        <PlayerCard player={oppDefender} />
+        <PlayerCard player={oppDefender} isOpponent />
       </div>
 
       {/* Attacker Options */}
