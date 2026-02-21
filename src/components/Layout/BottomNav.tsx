@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Trophy, Settings } from 'lucide-react';
+import { Home, Settings } from 'lucide-react';
 
 interface NavItem {
   path: string;
@@ -13,12 +13,6 @@ const navItems: NavItem[] = [
     path: '/',
     label: 'Home',
     icon: <Home className="w-5 h-5" />,
-  },
-  {
-    path: '/tournament',
-    label: 'Tournament',
-    icon: <Trophy className="w-5 h-5" />,
-    matchPaths: ['/tournament'],
   },
   {
     path: '/settings',

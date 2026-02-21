@@ -5,43 +5,45 @@ import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { ConfirmationModal } from '@/components/Common/ConfirmationModal';
 import { TeamCard } from '@/components/Cards/TeamCard';
-import { TournamentCard } from '@/components/Cards/TournamentCard';
+import { GameCard } from '@/components/Cards/GameCard';
 import { useTeamStore } from '@/store/teamStore';
-import { useTournamentStore } from '@/store/tournamentStore';
+import { useGameStore } from '@/store/gameStore';
 import { usePairingStore } from '@/store/pairingStore';
 
 export function HomePage() {
   const navigate = useNavigate();
   const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
-  const [tournamentToDelete, setTournamentToDelete] = useState<string | null>(null);
+  const [gameToDelete, setGameToDelete] = useState<string | null>(null);
   const { teams, deleteTeam } = useTeamStore();
-  const { tournaments, deleteTournament, setActiveTournament } = useTournamentStore();
-  const { tournamentId, roundIndex, phase } = usePairingStore();
+  const { games, deleteGame } = useGameStore();
+  const { gameId, phase } = usePairingStore();
 
   // Check for incomplete pairing session
   const hasIncompletePairing =
-    tournamentId !== null &&
-    roundIndex !== null &&
+    gameId !== null &&
     phase !== 'home' &&
-    phase !== 'round-summary' &&
-    phase !== 'tournament-summary';
+    phase !== 'game-summary';
 
   // Sort teams by most recently updated
   const sortedTeams = [...teams].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
-  // Sort tournaments: active first, then by creation date
-  const sortedTournaments = [...tournaments].sort((a, b) => {
-    const aCompleted = a.rounds.length > 0 && a.rounds.every((r) => r.status === 'completed');
-    const bCompleted = b.rounds.length > 0 && b.rounds.every((r) => r.status === 'completed');
+  // Sort games: in-progress first, then by creation date descending
+  const sortedGames = [...games].sort((a, b) => {
+    const aCompleted = a.status === 'completed';
+    const bCompleted = b.status === 'completed';
     if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const handleResumePairing = () => {
-    if (tournamentId && roundIndex !== null) {
-      navigate(`/tournament/${tournamentId}/round/${roundIndex}/pairing/${phase}`);
+    if (gameId) {
+      if (phase === 'matrix-entry') {
+        navigate(`/game/${gameId}/matrix`);
+      } else {
+        navigate(`/game/${gameId}/pairing/${phase}`);
+      }
     }
   };
 
@@ -60,31 +62,30 @@ export function HomePage() {
     }
   };
 
-  const handleContinueTournament = (tournament: (typeof tournaments)[0]) => {
-    setActiveTournament(tournament.id);
-    const currentRound = tournament.rounds[tournament.currentRoundIndex];
-    if (!currentRound || currentRound.status === 'not_started') {
-      navigate(`/tournament/${tournament.id}/round/${tournament.currentRoundIndex}/setup`);
-    } else if (currentRound.status === 'in_progress') {
-      navigate(`/tournament/${tournament.id}/round/${tournament.currentRoundIndex}/matrix`);
-    } else {
-      navigate(`/tournament/${tournament.id}`);
+  const handleViewGame = (clickedGameId: string) => {
+    // If this game has an active pairing session, resume it
+    if (clickedGameId === gameId && hasIncompletePairing) {
+      handleResumePairing();
+      return;
     }
-  };
-
-  const handleDeleteTournament = (tournamentId: string) => {
-    setTournamentToDelete(tournamentId);
-  };
-
-  const handleConfirmDeleteTournament = () => {
-    if (tournamentToDelete) {
-      deleteTournament(tournamentToDelete);
-      setTournamentToDelete(null);
+    // Non-completed games go to matrix, completed go to summary
+    const game = games.find((g) => g.id === clickedGameId);
+    if (game && game.status !== 'completed') {
+      navigate(`/game/${clickedGameId}/matrix`);
+      return;
     }
+    navigate(`/game/${clickedGameId}/summary`);
   };
 
-  const handleViewTournament = (tournamentId: string) => {
-    navigate(`/tournament/${tournamentId}`);
+  const handleDeleteGame = (gameId: string) => {
+    setGameToDelete(gameId);
+  };
+
+  const handleConfirmDeleteGame = () => {
+    if (gameToDelete) {
+      deleteGame(gameToDelete);
+      setGameToDelete(null);
+    }
   };
 
   return (
@@ -137,40 +138,39 @@ export function HomePage() {
           )}
         </section>
 
-        {/* Tournaments Section */}
+        {/* Games Section */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Tournaments</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Games</h2>
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => navigate('/tournament/new')}
+              onClick={() => navigate('/game/new')}
               disabled={teams.length === 0}
             >
-              New Tournament
+              New Game
             </Button>
           </div>
 
-          {sortedTournaments.length === 0 ? (
+          {sortedGames.length === 0 ? (
             <Card>
               <div className="py-4 text-center text-gray-500">
-                <p>No tournaments yet.</p>
+                <p>No games yet.</p>
                 <p className="text-sm">
                   {teams.length === 0
-                    ? 'Create a team first to start a tournament.'
-                    : 'Start a new tournament to begin pairing.'}
+                    ? 'Create a team first to start a game.'
+                    : 'Start a new game to begin pairing.'}
                 </p>
               </div>
             </Card>
           ) : (
             <div className="flex flex-col gap-3">
-              {sortedTournaments.map((tournament) => (
-                <TournamentCard
-                  key={tournament.id}
-                  tournament={tournament}
-                  onContinue={() => handleContinueTournament(tournament)}
-                  onDelete={() => handleDeleteTournament(tournament.id)}
-                  onClick={() => handleViewTournament(tournament.id)}
+              {sortedGames.map((game) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  onDelete={() => handleDeleteGame(game.id)}
+                  onClick={() => handleViewGame(game.id)}
                 />
               ))}
             </div>
@@ -190,14 +190,14 @@ export function HomePage() {
         variant="danger"
       />
 
-      {/* Delete Tournament Confirmation */}
+      {/* Delete Game Confirmation */}
       <ConfirmationModal
-        isOpen={tournamentToDelete !== null}
-        onClose={() => setTournamentToDelete(null)}
-        onConfirm={handleConfirmDeleteTournament}
-        title="Delete Tournament?"
-        message="This will permanently delete the tournament and all round data. This action cannot be undone."
-        confirmText="Delete Tournament"
+        isOpen={gameToDelete !== null}
+        onClose={() => setGameToDelete(null)}
+        onConfirm={handleConfirmDeleteGame}
+        title="Delete Game?"
+        message="This will permanently delete this game and all its pairing data. This action cannot be undone."
+        confirmText="Delete Game"
         cancelText="Cancel"
         variant="danger"
       />

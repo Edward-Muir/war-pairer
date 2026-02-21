@@ -7,14 +7,13 @@ import type {
   MatchupMatrix,
   RoundSelectionState,
 } from './types';
-import { useTournamentStore } from './tournamentStore';
+import { useGameStore } from './gameStore';
 
 interface PairingState {
   // Current pairing session context
-  tournamentId: string | null;
-  roundIndex: number | null;
+  gameId: string | null;
 
-  // Matrix data for current round
+  // Matrix data for current game
   matrix: MatchupMatrix | null;
 
   // Current phase
@@ -34,7 +33,7 @@ interface PairingState {
 
 interface PairingActions {
   // Initialization
-  initializeFromTournament: (tournamentId: string, roundIndex: number) => boolean;
+  initializeFromGame: (gameId: string) => boolean;
   reset: () => void;
 
   // Phase transitions
@@ -56,6 +55,7 @@ interface PairingActions {
   // Pairing actions
   lockPairing: (pairing: Pairing) => void;
   choosePairing: (ourPlayer: Player, oppPlayer: Player, round: 1 | 2 | 3) => void;
+  undoLastPairing: () => void;
 
   // Computed helpers
   getOurRemaining: () => Player[];
@@ -73,8 +73,7 @@ const initialRoundState: RoundSelectionState = {
 };
 
 const initialState: PairingState = {
-  tournamentId: null,
-  roundIndex: null,
+  gameId: null,
   matrix: null,
   phase: 'home',
   round1: { ...initialRoundState },
@@ -88,8 +87,7 @@ const initialState: PairingState = {
 const phaseOrder: Phase[] = [
   'home',
   'team-setup',
-  'tournament-setup',
-  'round-setup',
+  'game-setup',
   'matrix-entry',
   'defender-1-select',
   'defender-1-reveal',
@@ -102,44 +100,37 @@ const phaseOrder: Phase[] = [
   'attacker-2-reveal',
   'defender-2-choose',
   'final-pairing',
-  'round-summary',
-  'tournament-summary',
+  'game-summary',
 ];
 
-// Helper to rebuild matrix and remaining players from tournament data
-function rebuildFromTournament(
-  tournamentId: string | null,
-  roundIndex: number | null,
+// Helper to rebuild matrix and remaining players from game data
+function rebuildFromGame(
+  gameId: string | null,
   pairings: Pairing[]
 ): { matrix: MatchupMatrix | null; ourRemaining: Player[]; oppRemaining: Player[] } {
-  if (!tournamentId || roundIndex === null) {
+  if (!gameId) {
     return { matrix: null, ourRemaining: [], oppRemaining: [] };
   }
 
-  const tournament = useTournamentStore.getState().getTournament(tournamentId);
-  if (!tournament) {
-    return { matrix: null, ourRemaining: [], oppRemaining: [] };
-  }
-
-  const round = tournament.rounds[roundIndex];
-  if (!round) {
+  const game = useGameStore.getState().getGame(gameId);
+  if (!game) {
     return { matrix: null, ourRemaining: [], oppRemaining: [] };
   }
 
   const matrix: MatchupMatrix = {
-    ourTeam: [...tournament.ourTeam.players],
-    oppTeam: [...round.opponentPlayers],
-    scores: round.matrix,
+    ourTeam: [...game.ourTeam.players],
+    oppTeam: [...game.opponentPlayers],
+    scores: game.matrix,
   };
 
   // Remove already-paired players from remaining
   const pairedOurIds = new Set(pairings.map((p) => p.ourPlayer.id));
   const pairedOppIds = new Set(pairings.map((p) => p.oppPlayer.id));
 
-  const ourRemaining = tournament.ourTeam.players.filter(
+  const ourRemaining = game.ourTeam.players.filter(
     (p) => !pairedOurIds.has(p.id)
   );
-  const oppRemaining = round.opponentPlayers.filter(
+  const oppRemaining = game.opponentPlayers.filter(
     (p) => !pairedOppIds.has(p.id)
   );
 
@@ -153,29 +144,25 @@ export const usePairingStore = create<PairingStore>()(
       ...initialState,
 
       // Actions
-      initializeFromTournament: (tournamentId, roundIndex) => {
-        const tournament = useTournamentStore.getState().getTournament(tournamentId);
-        if (!tournament) return false;
-
-        const round = tournament.rounds[roundIndex];
-        if (!round) return false;
+      initializeFromGame: (gameId) => {
+        const game = useGameStore.getState().getGame(gameId);
+        if (!game) return false;
 
         const matrix: MatchupMatrix = {
-          ourTeam: [...tournament.ourTeam.players],
-          oppTeam: [...round.opponentPlayers],
-          scores: round.matrix,
+          ourTeam: [...game.ourTeam.players],
+          oppTeam: [...game.opponentPlayers],
+          scores: game.matrix,
         };
 
         set({
-          tournamentId,
-          roundIndex,
+          gameId,
           matrix,
           phase: 'matrix-entry',
           round1: { ...initialRoundState },
           round2: { ...initialRoundState },
           pairings: [],
-          ourRemaining: [...tournament.ourTeam.players],
-          oppRemaining: [...round.opponentPlayers],
+          ourRemaining: [...game.ourTeam.players],
+          oppRemaining: [...game.opponentPlayers],
         });
 
         return true;
@@ -280,6 +267,18 @@ export const usePairingStore = create<PairingStore>()(
         });
       },
 
+      undoLastPairing: () => {
+        set((state) => {
+          if (state.pairings.length === 0) return state;
+          const lastPairing = state.pairings[state.pairings.length - 1];
+          return {
+            pairings: state.pairings.slice(0, -1),
+            ourRemaining: [...state.ourRemaining, lastPairing.ourPlayer],
+            oppRemaining: [...state.oppRemaining, lastPairing.oppPlayer],
+          };
+        });
+      },
+
       // Helpers
       getOurRemaining: () => get().ourRemaining,
       getOppRemaining: () => get().oppRemaining,
@@ -294,19 +293,17 @@ export const usePairingStore = create<PairingStore>()(
       storage: createJSONStorage(() => localStorage),
       // Only persist essential state, not derived values
       partialize: (state) => ({
-        tournamentId: state.tournamentId,
-        roundIndex: state.roundIndex,
+        gameId: state.gameId,
         phase: state.phase,
         round1: state.round1,
         round2: state.round2,
         pairings: state.pairings,
       }),
-      // Rebuild matrix and remaining players from tournament data after rehydration
+      // Rebuild matrix and remaining players from game data after rehydration
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const { matrix, ourRemaining, oppRemaining } = rebuildFromTournament(
-            state.tournamentId,
-            state.roundIndex,
+          const { matrix, ourRemaining, oppRemaining } = rebuildFromGame(
+            state.gameId,
             state.pairings
           );
           state.matrix = matrix;

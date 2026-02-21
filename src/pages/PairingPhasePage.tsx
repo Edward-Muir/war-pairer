@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { List } from 'lucide-react';
+import { List, Home } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConfirmationModal } from '@/components/Common/ConfirmationModal';
 import { LockedPairingsDrawer } from '@/components/Drawers/LockedPairingsDrawer';
@@ -60,9 +60,8 @@ const previousPhaseMap: Record<string, Phase | 'confirm-abandon'> = {
 };
 
 export function PairingPhasePage() {
-  const { id, roundIndex, phase } = useParams<{
+  const { id, phase } = useParams<{
     id: string;
-    roundIndex: string;
     phase: string;
   }>();
   const navigate = useNavigate();
@@ -74,11 +73,11 @@ export function PairingPhasePage() {
 
   const goToPhase = (nextPhase: Phase) => {
     setPhase(nextPhase);
-    navigate(`/tournament/${id}/round/${roundIndex}/pairing/${nextPhase}`);
+    navigate(`/game/${id}/pairing/${nextPhase}`);
   };
 
   const goToSummary = () => {
-    navigate(`/tournament/${id}/round/${roundIndex}/summary`);
+    navigate(`/game/${id}/summary`);
   };
 
   const goBack = () => {
@@ -91,16 +90,16 @@ export function PairingPhasePage() {
     } else if (previousPhase) {
       // Navigate to previous pairing phase
       setPhase(previousPhase);
-      navigate(`/tournament/${id}/round/${roundIndex}/pairing/${previousPhase}`);
+      navigate(`/game/${id}/pairing/${previousPhase}`);
     } else {
       // Unknown phase - fallback to matrix
-      navigate(`/tournament/${id}/round/${roundIndex}/matrix`);
+      navigate(`/game/${id}/matrix`);
     }
   };
 
   const handleAbandonConfirm = () => {
     resetPairingStore();
-    navigate(`/tournament/${id}/round/${roundIndex}/matrix`);
+    navigate(`/game/${id}/matrix`);
   };
 
   // Show error if no matrix loaded
@@ -120,20 +119,29 @@ export function PairingPhasePage() {
   const title = phaseTitles[currentPhase] || 'Pairing';
   const round = phaseRound[currentPhase] as 1 | 2 | undefined;
 
-  // Header right action - toggle button for locked pairings drawer
-  const pairingsToggleButton = (
-    <button
-      onClick={() => setShowPairingsDrawer(true)}
-      className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-      aria-label={`View locked pairings (${pairings.length})`}
-    >
-      <List className="h-5 w-5" />
-      {pairings.length > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
-          {pairings.length}
-        </span>
-      )}
-    </button>
+  // Header right actions
+  const headerRightActions = (
+    <>
+      <button
+        onClick={() => setShowPairingsDrawer(true)}
+        className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+        aria-label={`View locked pairings (${pairings.length})`}
+      >
+        <List className="h-5 w-5" />
+        {pairings.length > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-medium text-white">
+            {pairings.length}
+          </span>
+        )}
+      </button>
+      <button
+        onClick={() => navigate('/')}
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+        aria-label="Go home"
+      >
+        <Home className="h-5 w-5" />
+      </button>
+    </>
   );
 
   // Render phase-specific content
@@ -179,7 +187,7 @@ export function PairingPhasePage() {
         onBack={goBack}
         showNav={false}
         currentPhase={currentPhase}
-        rightAction={pairingsToggleButton}
+        rightAction={headerRightActions}
       >
         {renderContent()}
       </Layout>

@@ -44,33 +44,22 @@ export interface MatchupMatrix {
 }
 
 // ============================================
-// Tournament Types
+// Game Types
 // ============================================
 
-export type RoundStatus = 'not_started' | 'in_progress' | 'completed';
+export type GameStatus = 'setup' | 'matrix' | 'pairing' | 'completed';
 
 /**
- * A single round within a tournament
+ * A standalone game (single pairing session against one opponent)
  */
-export interface TournamentRound {
-  roundNumber: number;
+export interface Game {
+  id: string;
+  ourTeam: Team;              // Snapshot of team at game creation
   opponentTeamName: string;
   opponentPlayers: Player[];
-  matrix: number[][];           // Raw score data
-  pairings: Pairing[];          // Filled after completion
-  actualScores?: number[];      // Optional post-game results
-  status: RoundStatus;
-}
-
-/**
- * A tournament tracking multiple rounds
- */
-export interface Tournament {
-  id: string;
-  name: string;
-  ourTeam: Team;                // Embedded snapshot of team at tournament creation
-  rounds: TournamentRound[];
-  currentRoundIndex: number;    // 0-based index into rounds array
+  matrix: number[][];         // 5x5 scores
+  pairings: Pairing[];        // Filled after pairing completion
+  status: GameStatus;
   createdAt: string;
 }
 
@@ -95,8 +84,7 @@ export type Phase =
   // Setup phases
   | 'home'
   | 'team-setup'
-  | 'tournament-setup'
-  | 'round-setup'
+  | 'game-setup'
   | 'matrix-entry'
   // Pairing round 1
   | 'defender-1-select'
@@ -112,8 +100,7 @@ export type Phase =
   | 'defender-2-choose'
   // Completion
   | 'final-pairing'
-  | 'round-summary'
-  | 'tournament-summary';
+  | 'game-summary';
 
 // ============================================
 // Utility Types
@@ -133,17 +120,10 @@ export type CreateTeamInput = {
 export type UpdateTeamInput = Partial<Omit<Team, 'id' | 'createdAt'>>;
 
 /**
- * Helper type to create a new tournament
+ * Helper type to create a new game
  */
-export type CreateTournamentInput = {
-  name: string;
-  teamId: string;  // Will look up and snapshot the team
-};
-
-/**
- * Helper for creating a round
- */
-export type CreateRoundInput = {
+export type CreateGameInput = {
+  teamId: string;
   opponentTeamName: string;
   opponentPlayers: Player[];
 };

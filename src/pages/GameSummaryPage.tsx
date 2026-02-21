@@ -1,69 +1,50 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Home } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { MatchupPreview } from '@/components/Display/MatchupPreview';
-import { RoundIndicator } from '@/components/Display/RoundIndicator';
 import { ScorePickerCell } from '@/components/Inputs/ScorePickerCell';
 import { ScorePickerPopover } from '@/components/Inputs/ScorePickerPopover';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
-import { useTournamentStore } from '@/store/tournamentStore';
+import { useGameStore } from '@/store/gameStore';
 import { calculateRoundTotals } from '@/utils/scoring';
 import type { Pairing } from '@/store/types';
 
-export function RoundSummaryPage() {
-  const { id, roundIndex: roundIndexParam } = useParams<{
-    id: string;
-    roundIndex: string;
-  }>();
+export function GameSummaryPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const roundIndex = parseInt(roundIndexParam ?? '0', 10);
 
   // Pairing store - for fresh pairings from just-completed pairing flow
   const {
     pairings: sessionPairings,
-    tournamentId: sessionTournamentId,
-    roundIndex: sessionRoundIndex,
+    gameId: sessionGameId,
     reset: resetPairingStore,
+    initializeFromGame,
+    undoLastPairing,
+    setPhase,
   } = usePairingStore();
 
-  // Tournament store
-  const { getTournament, completeRound, updateActualScore } =
-    useTournamentStore();
-  const tournament = getTournament(id ?? '');
-  const round = tournament?.rounds[roundIndex];
+  // Game store
+  const { getGame, completeGame, updateActualScore } = useGameStore();
+  const game = getGame(id ?? '');
 
   // State for score picker popover
   const [activePairingIndex, setActivePairingIndex] = useState<number | null>(null);
 
-  // Use session pairings if we just completed pairing, otherwise load from tournament
+  // Use session pairings if we just completed pairing, otherwise load from game
   const isFromSession =
-    sessionTournamentId === id &&
-    sessionRoundIndex === roundIndex &&
+    sessionGameId === id &&
     sessionPairings.length === 5;
 
   const pairings: Pairing[] = useMemo(() => {
     if (isFromSession) {
       return sessionPairings;
     }
-    return round?.pairings ?? [];
-  }, [isFromSession, sessionPairings, round?.pairings]);
-
-  // Save pairings to tournament on mount if coming from session
-  useEffect(() => {
-    if (isFromSession && round && round.pairings.length === 0) {
-      completeRound(id!, roundIndex, sessionPairings);
-    }
-  }, [
-    isFromSession,
-    round,
-    id,
-    roundIndex,
-    sessionPairings,
-    completeRound,
-  ]);
+    return game?.pairings ?? [];
+  }, [isFromSession, sessionPairings, game?.pairings]);
 
   // Calculate totals
   const { expectedTotal, actualTotal, allScoresEntered } = useMemo(
@@ -74,31 +55,43 @@ export function RoundSummaryPage() {
   // Handlers
   const handleScoreSelect = (score: number) => {
     if (activePairingIndex !== null && id) {
-      updateActualScore(id, roundIndex, activePairingIndex, score);
+      updateActualScore(id, activePairingIndex, score);
     }
     setActivePairingIndex(null);
   };
 
-  const handleNextRound = () => {
+  const handleFinish = () => {
+    if (isFromSession && id) {
+      completeGame(id, sessionPairings);
+    }
     resetPairingStore();
-    navigate(`/tournament/${id}/round/${roundIndex + 1}/setup`);
-  };
-
-  const handleFinishTournament = () => {
-    resetPairingStore();
-    navigate(`/tournament/${id}`);
+    navigate('/');
   };
 
   const handleBack = () => {
-    navigate(`/tournament/${id}`);
+    // If we have an active session for this game, go back to the pairing flow
+    if (isFromSession && id) {
+      // Undo the final (round 3) pairing so FinalPairingContent has its data
+      undoLastPairing();
+      setPhase('final-pairing');
+      navigate(`/game/${id}/pairing/final-pairing`);
+      return;
+    }
+    navigate('/');
+  };
+
+  const handleEditPairings = () => {
+    if (!id) return;
+    initializeFromGame(id);
+    navigate(`/game/${id}/matrix`);
   };
 
   // Error states
-  if (!tournament) {
+  if (!game) {
     return (
-      <Layout title="Round Summary" showBack onBack={() => navigate('/')}>
+      <Layout title="Game Summary" showBack onBack={() => navigate('/')}>
         <div className="p-4 text-center">
-          <p className="text-gray-600">Tournament not found</p>
+          <p className="text-gray-600">Game not found</p>
           <div className="mt-4">
             <Button variant="primary" onClick={() => navigate('/')}>
               Go Home
@@ -111,15 +104,13 @@ export function RoundSummaryPage() {
 
   if (pairings.length === 0) {
     return (
-      <Layout title="Round Summary" showBack onBack={handleBack}>
+      <Layout title="Game Summary" showBack onBack={handleBack}>
         <div className="p-4 text-center">
-          <p className="text-gray-600">No pairings found for this round</p>
+          <p className="text-gray-600">No pairings found for this game</p>
           <div className="mt-4">
             <Button
               variant="primary"
-              onClick={() =>
-                navigate(`/tournament/${id}/round/${roundIndex}/matrix`)
-              }
+              onClick={() => navigate(`/game/${id}/matrix`)}
             >
               Start Pairing
             </Button>
@@ -129,16 +120,24 @@ export function RoundSummaryPage() {
     );
   }
 
-  const totalRounds = tournament.rounds.length;
-  const isLastRound = roundIndex >= totalRounds - 1;
-  const opponentName = round?.opponentTeamName ?? 'Opponent';
+  const opponentName = game.opponentTeamName ?? 'Opponent';
 
   return (
-    <Layout title="Round Summary" showBack onBack={handleBack}>
+    <Layout
+      title="Game Summary"
+      showBack
+      onBack={handleBack}
+      rightAction={isFromSession ? (
+        <button
+          onClick={() => navigate('/')}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          aria-label="Go home"
+        >
+          <Home className="h-5 w-5" />
+        </button>
+      ) : undefined}
+    >
       <div className="p-4 space-y-4">
-        {/* Round indicator */}
-        <RoundIndicator currentRound={roundIndex + 1} totalRounds={totalRounds} />
-
         {/* Opponent name */}
         <div className="text-center">
           <p className="text-sm text-gray-500">vs</p>
@@ -179,7 +178,7 @@ export function RoundSummaryPage() {
         {/* Score summary */}
         <Card className="p-4">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-            Round Score
+            Game Score
           </h2>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -217,18 +216,20 @@ export function RoundSummaryPage() {
 
         {/* Action buttons */}
         <div className="space-y-2 pt-4">
-          {isLastRound ? (
-            <Button variant="primary" fullWidth onClick={handleFinishTournament}>
-              Finish Tournament
+          {isFromSession ? (
+            <Button variant="primary" fullWidth onClick={handleFinish}>
+              Finish Game
             </Button>
           ) : (
-            <Button variant="primary" fullWidth onClick={handleNextRound}>
-              Next Round
-            </Button>
+            <>
+              <Button variant="primary" fullWidth onClick={handleBack}>
+                Done
+              </Button>
+              <Button variant="secondary" fullWidth onClick={handleEditPairings}>
+                Edit Pairings
+              </Button>
+            </>
           )}
-          <Button variant="secondary" fullWidth onClick={handleBack}>
-            View Tournament
-          </Button>
         </div>
       </div>
 

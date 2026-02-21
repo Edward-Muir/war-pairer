@@ -28,8 +28,8 @@ export function Header({ title, showBack = false, onBack, rightAction }: HeaderP
         {title}
       </h1>
 
-      {/* Right section - Action */}
-      <div className="w-12 flex justify-end">{rightAction}</div>
+      {/* Right section - Action(s) */}
+      <div className="flex items-center justify-end gap-1">{rightAction}</div>
     </header>
   );
 }

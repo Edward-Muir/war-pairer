@@ -4,12 +4,10 @@ import { Layout } from '@/components/Layout';
 // Implemented pages
 import { HomePage } from '@/pages/HomePage';
 import { TeamSetupPage } from '@/pages/TeamSetupPage';
-import { TournamentSetupPage } from '@/pages/TournamentSetupPage';
-import { RoundSetupPage } from '@/pages/RoundSetupPage';
+import { GameSetupPage } from '@/pages/GameSetupPage';
 import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
 import { PairingPhasePage } from '@/pages/PairingPhasePage';
-import { RoundSummaryPage } from '@/pages/RoundSummaryPage';
-import { TournamentSummaryPage } from '@/pages/TournamentSummaryPage';
+import { GameSummaryPage } from '@/pages/GameSummaryPage';
 
 // Placeholder pages - will be implemented in later phases
 function SettingsPage() {
@@ -33,33 +31,17 @@ function App() {
         <Route path="/team/new" element={<TeamSetupPage />} />
         <Route path="/team/:id/edit" element={<TeamSetupPage />} />
 
-        {/* Tournament management */}
-        <Route path="/tournament/new" element={<TournamentSetupPage />} />
-        <Route path="/tournament/:id" element={<TournamentSummaryPage />} />
-
-        {/* Round flow */}
+        {/* Game flow */}
+        <Route path="/game/new" element={<GameSetupPage />} />
+        <Route path="/game/:id/matrix" element={<MatrixEntryPage />} />
         <Route
-          path="/tournament/:id/round/:roundIndex/setup"
-          element={<RoundSetupPage />}
-        />
-        <Route
-          path="/tournament/:id/round/:roundIndex/matrix"
-          element={<MatrixEntryPage />}
-        />
-        <Route
-          path="/tournament/:id/round/:roundIndex/pairing/:phase"
+          path="/game/:id/pairing/:phase"
           element={<PairingPhasePage />}
         />
-        <Route
-          path="/tournament/:id/round/:roundIndex/summary"
-          element={<RoundSummaryPage />}
-        />
+        <Route path="/game/:id/summary" element={<GameSummaryPage />} />
 
         {/* Settings */}
         <Route path="/settings" element={<SettingsPage />} />
-
-        {/* Tournament tab (redirects to active or list) */}
-        <Route path="/tournament" element={<TournamentSummaryPage />} />
       </Routes>
     </BrowserRouter>
   );

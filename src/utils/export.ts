@@ -1,25 +1,25 @@
-import type { Team, Tournament } from '@/store/types';
+import type { Team, Game } from '@/store/types';
 
 interface ExportData {
   version: string;
   exportedAt: string;
   teams: Team[];
-  tournaments: Tournament[];
+  games: Game[];
 }
 
 /**
- * Export teams and tournaments to a JSON file download
+ * Export teams and games to a JSON file download
  */
 export function exportToJson(
   teams: Team[],
-  tournaments: Tournament[],
+  games: Game[],
   filename = 'uktc-pairing-data.json'
 ): void {
   const data: ExportData = {
     version: '1.0',
     exportedAt: new Date().toISOString(),
     teams,
-    tournaments,
+    games,
   };
   downloadFile(JSON.stringify(data, null, 2), filename, 'application/json');
 }
@@ -30,7 +30,7 @@ export function exportToJson(
  */
 export async function importFromJson(
   file: File
-): Promise<{ teams: Team[]; tournaments: Tournament[] }> {
+): Promise<{ teams: Team[]; games: Game[] }> {
   const text = await file.text();
   const data = JSON.parse(text) as ExportData;
 
@@ -38,24 +38,26 @@ export async function importFromJson(
   if (!data.teams || !Array.isArray(data.teams)) {
     throw new Error('Invalid file: missing teams array');
   }
-  if (!data.tournaments || !Array.isArray(data.tournaments)) {
-    throw new Error('Invalid file: missing tournaments array');
+  if (!data.games || !Array.isArray(data.games)) {
+    throw new Error('Invalid file: missing games array');
   }
 
-  return { teams: data.teams, tournaments: data.tournaments };
+  return { teams: data.teams, games: data.games };
 }
 
 /**
- * Export a single tournament to JSON
+ * Export a single game to JSON
  */
-export function exportTournamentToJson(tournament: Tournament): void {
-  const safeName = tournament.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+export function exportGameToJson(game: Game): void {
+  const safeName = `${game.ourTeam.teamName}-vs-${game.opponentTeamName}`
+    .replace(/[^a-z0-9]/gi, '-')
+    .toLowerCase();
   const date = new Date().toISOString().split('T')[0];
   const filename = `${safeName}-${date}.json`;
   const data = {
     version: '1.0',
     exportedAt: new Date().toISOString(),
-    tournament,
+    game,
   };
   downloadFile(JSON.stringify(data, null, 2), filename, 'application/json');
 }

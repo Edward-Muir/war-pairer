@@ -10,5 +10,5 @@ export type { AttackerPairCardProps } from './AttackerPairCard'
 export { TeamCard } from './TeamCard'
 export type { TeamCardProps } from './TeamCard'
 
-export { TournamentCard } from './TournamentCard'
-export type { TournamentCardProps } from './TournamentCard'
+export { GameCard } from './GameCard'
+export type { GameCardProps } from './GameCard'

@@ -1,37 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTournamentStore } from '@/store/tournamentStore';
+import { Home } from 'lucide-react';
+import { useGameStore } from '@/store/gameStore';
 import { usePairingStore } from '@/store/pairingStore';
 import { Layout } from '@/components/Layout';
 import { MatrixGrid } from '@/components/Matrix/MatrixGrid';
-import { RoundIndicator } from '@/components/Display/RoundIndicator';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 
 export function MatrixEntryPage() {
-  const { id, roundIndex } = useParams<{ id: string; roundIndex: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   // Store hooks
-  const { getTournament, updateRoundMatrix, setActiveTournament } = useTournamentStore();
-  const { initializeFromTournament, setPhase } = usePairingStore();
+  const { getGame, updateGameMatrix, setActiveGame } = useGameStore();
+  const { initializeFromGame, setPhase } = usePairingStore();
 
-  // Get tournament and round data
-  const tournament = getTournament(id!);
-  const roundIdx = parseInt(roundIndex!, 10);
-  const round = tournament?.rounds[roundIdx];
+  // Get game data
+  const game = getGame(id!);
 
-  // Set active tournament on mount
+  // Set active game on mount
   useEffect(() => {
     if (id) {
-      setActiveTournament(id);
+      setActiveGame(id);
     }
-  }, [id, setActiveTournament]);
+  }, [id, setActiveGame]);
 
   // Local matrix state (copy from store to allow editing)
   const [matrix, setMatrix] = useState<number[][]>(() => {
-    if (round?.matrix?.length === 5) {
-      return round.matrix.map(row => [...row]); // Deep copy
+    if (game?.matrix?.length === 5) {
+      return game.matrix.map(row => [...row]); // Deep copy
     }
     return Array(5).fill(null).map(() => Array(5).fill(10));
   });
@@ -50,45 +48,50 @@ export function MatrixEntryPage() {
   };
 
   const handleStartPairing = () => {
-    // 1. Save matrix to tournament store (persist)
-    updateRoundMatrix(id!, roundIdx, matrix);
+    // 1. Save matrix to game store (persist)
+    updateGameMatrix(id!, matrix);
     // 2. Initialize pairing session with updated matrix
-    // Note: We need a small delay since store updates are synchronous but
-    // the getTournament read in initializeFromTournament needs the updated value
     setTimeout(() => {
-      initializeFromTournament(id!, roundIdx);
+      initializeFromGame(id!);
       setPhase('defender-1-select');
       // 3. Navigate to first pairing phase
-      navigate(`/tournament/${id}/round/${roundIndex}/pairing/defender-1-select`);
+      navigate(`/game/${id}/pairing/defender-1-select`);
     }, 0);
   };
 
   const handleBack = () => {
     // Save current matrix progress before going back
-    updateRoundMatrix(id!, roundIdx, matrix);
-    navigate(`/tournament/${id}/round/${roundIndex}/setup`);
+    updateGameMatrix(id!, matrix);
+    navigate('/');
   };
 
-  // Guard: no tournament/round
-  if (!tournament || !round) {
+  // Guard: no game
+  if (!game) {
     return (
       <Layout title="Error" showBack onBack={() => navigate('/')}>
         <div className="p-4">
-          <p className="text-gray-600">Tournament or round not found.</p>
+          <p className="text-gray-600">Game not found.</p>
         </div>
       </Layout>
     );
   }
 
   return (
-    <Layout title="Enter Matchup Scores" showBack onBack={handleBack}>
+    <Layout
+      title="Enter Matchup Scores"
+      showBack
+      onBack={handleBack}
+      rightAction={
+        <button
+          onClick={handleBack}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          aria-label="Go home"
+        >
+          <Home className="h-5 w-5" />
+        </button>
+      }
+    >
       <div className="px-4">
-        {/* Round indicator */}
-        <RoundIndicator
-          currentRound={roundIdx + 1}
-          totalRounds={tournament.rounds.length}
-        />
-
         {/* Instructions */}
         <Card className="mt-4">
           <p className="text-sm text-gray-600">
@@ -108,8 +111,8 @@ export function MatrixEntryPage() {
       {/* Matrix grid */}
       <div className="px-4 mt-4">
         <MatrixGrid
-          ourTeam={tournament.ourTeam.players}
-          oppTeam={round.opponentPlayers}
+          ourTeam={game.ourTeam.players}
+          oppTeam={game.opponentPlayers}
           scores={matrix}
           onScoreChange={handleScoreChange}
         />
