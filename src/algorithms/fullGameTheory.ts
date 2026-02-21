@@ -58,6 +58,22 @@ export interface FullAttackerAnalysis {
   isOptimal: boolean
 }
 
+/** Analysis of opponent's attacker pair options from their perspective */
+export interface OpponentAttackerAnalysis {
+  /** Opponent player indices */
+  attackers: [number, number]
+  /** What we score from this immediate pairing (min of the two) */
+  expectedScoreForUs: number
+  /** What opponent scores from this immediate pairing (20 - ourScore) */
+  expectedScoreForOpp: number
+  /** Opponent's total expected value including future rounds */
+  totalExpectedValueForOpp: number
+  /** Which attacker they'd force to face our defender (lower score for us) */
+  forcedMatchup: number
+  /** Whether this is their optimal choice */
+  isOptimal: boolean
+}
+
 /** Nash equilibrium solution for a zero-sum game */
 export interface GameEquilibrium {
   /** Value of the game (expected score with optimal play) */
@@ -264,6 +280,147 @@ export function analyzeAttackerPhase(
   }
 
   return analyses
+}
+
+/**
+ * Analyze opponent's attacker pair options from their perspective.
+ * Uses full backward induction to evaluate future rounds.
+ *
+ * @param matrix - The matchup matrix (from our perspective: matrix[our][opp] = our score)
+ * @param ourDefender - Index of our defender
+ * @param oppDefender - Index of opponent's defender
+ * @param ourAvailable - Our players available to attack (excluding our defender)
+ * @param oppAvailable - Opponent players available (excluding their defender)
+ * @returns Ranked list of opponent's attacker pair options (best for them first)
+ */
+export function analyzeOpponentAttackerPhase(
+  matrix: number[][],
+  ourDefender: number,
+  oppDefender: number,
+  ourAvailable: number[],
+  oppAvailable: number[]
+): OpponentAttackerAnalysis[] {
+  const analyses: OpponentAttackerAnalysis[] = []
+
+  // Generate all possible opponent attacker pairs
+  for (let i = 0; i < oppAvailable.length; i++) {
+    for (let j = i + 1; j < oppAvailable.length; j++) {
+      const oppAttacker1 = oppAvailable[i]
+      const oppAttacker2 = oppAvailable[j]
+
+      // Our defender chooses which opponent attacker to face (picks higher score for us)
+      const score1 = matrix[ourDefender][oppAttacker1]
+      const score2 = matrix[ourDefender][oppAttacker2]
+      const expectedScoreForUs = Math.min(score1, score2) // They pick worse for us
+      const expectedScoreForOpp = 20 - expectedScoreForUs
+      const forcedMatchup = score1 <= score2 ? oppAttacker1 : oppAttacker2
+      const oppAttackerChosen = score1 <= score2 ? oppAttacker1 : oppAttacker2
+
+      // Calculate who we send against their defender (our optimal attackers)
+      const ourSentAttackers = findOptimalAttackerPairForUsInternal(
+        matrix,
+        oppDefender,
+        ourAvailable
+      )
+      const ourAtt1Score = matrix[ourSentAttackers[0]][oppDefender]
+      const ourAtt2Score = matrix[ourSentAttackers[1]][oppDefender]
+      const ourAttackerScore = Math.min(ourAtt1Score, ourAtt2Score)
+      const ourAttackerChosen =
+        ourAtt1Score <= ourAtt2Score ? ourSentAttackers[0] : ourSentAttackers[1]
+
+      // Calculate remaining players after this round
+      const newOurRemaining = ourAvailable.filter((p) => p !== ourAttackerChosen)
+      const newOppRemaining = oppAvailable.filter((p) => p !== oppAttackerChosen)
+
+      // Calculate our defender's score in this exchange
+      const ourDefenderScore = Math.max(score1, score2)
+
+      // Evaluate future rounds
+      let futureValueForUs: number
+      if (newOurRemaining.length === 1) {
+        // Round 3: forced pairing
+        futureValueForUs = matrix[newOurRemaining[0]][newOppRemaining[0]]
+      } else if (newOurRemaining.length === 0) {
+        futureValueForUs = 0
+      } else {
+        // Round 2: recursive evaluation
+        const futureResult = analyzeDefenderPhase(
+          matrix,
+          newOurRemaining,
+          newOppRemaining
+        )
+        futureValueForUs = futureResult.gameValue
+      }
+
+      // Total value for us from this round onwards
+      const totalExpectedValueForUs =
+        ourDefenderScore + ourAttackerScore + futureValueForUs
+
+      // Number of remaining pairings (including this round)
+      // Round 1: 3 pairings (5v5 -> 3v3 -> 1v1)
+      // Round 2: 2 pairings (3v3 -> 1v1)
+      const numRemainingPairings =
+        newOurRemaining.length === 1 ? 2 : newOurRemaining.length === 0 ? 1 : 3
+
+      // Convert to opponent's perspective (zero-sum: total points = 20 * numPairings)
+      const totalExpectedValueForOpp =
+        20 * numRemainingPairings - totalExpectedValueForUs
+
+      analyses.push({
+        attackers: [oppAttacker1, oppAttacker2],
+        expectedScoreForUs,
+        expectedScoreForOpp,
+        totalExpectedValueForOpp,
+        forcedMatchup,
+        isOptimal: false,
+      })
+    }
+  }
+
+  // Sort by opponent's total expected value descending (best for them first)
+  analyses.sort((a, b) => b.totalExpectedValueForOpp - a.totalExpectedValueForOpp)
+
+  // Mark optimal choices (may be ties)
+  if (analyses.length > 0) {
+    const bestValue = analyses[0].totalExpectedValueForOpp
+    analyses.forEach((a) => {
+      a.isOptimal = a.totalExpectedValueForOpp === bestValue
+    })
+  }
+
+  return analyses
+}
+
+/**
+ * Internal helper to find optimal attacker pair for us.
+ * Duplicated logic to avoid circular dependency issues.
+ */
+function findOptimalAttackerPairForUsInternal(
+  matrix: number[][],
+  oppDefender: number,
+  ourAttackers: number[]
+): [number, number] {
+  if (ourAttackers.length <= 2) {
+    return [ourAttackers[0], ourAttackers[1] ?? ourAttackers[0]]
+  }
+
+  let bestPair: [number, number] = [ourAttackers[0], ourAttackers[1]]
+  let bestMinScore = -Infinity
+
+  for (let i = 0; i < ourAttackers.length; i++) {
+    for (let j = i + 1; j < ourAttackers.length; j++) {
+      const score1 = matrix[ourAttackers[i]][oppDefender]
+      const score2 = matrix[ourAttackers[j]][oppDefender]
+      const minScore = Math.min(score1, score2)
+
+      if (minScore > bestMinScore) {
+        bestMinScore = minScore
+        bestPair = [ourAttackers[i], ourAttackers[j]]
+      }
+    }
+  }
+
+  return bestPair
 }
 
 // ============================================================================

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { PlayerPicker } from '@/components/Inputs/PlayerPicker';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
+import { analyzeOpponentAttackerPhase } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
 
 interface AttackerRevealContentProps {
@@ -17,6 +18,8 @@ export function AttackerRevealContent({
   onNext,
 }: AttackerRevealContentProps) {
   const {
+    matrix,
+    ourRemaining,
     oppRemaining,
     round1,
     round2,
@@ -80,6 +83,54 @@ export function AttackerRevealContent({
   const expectedScore = opp1Score !== null && opp2Score !== null
     ? Math.min(opp1Score, opp2Score)
     : null;
+
+  // Analyze opponent's attacker options with full game theory
+  const oppAttackerAnalyses = useMemo(() => {
+    if (!matrix || !ourDefender || !oppDefender || availableOppAttackers.length < 2) return null;
+
+    const ourAvailable = ourRemaining
+      .filter(p => p.id !== ourDefender.id)
+      .map(p => p.index);
+
+    return analyzeOpponentAttackerPhase(
+      matrix.scores,
+      ourDefender.index,
+      oppDefender.index,
+      ourAvailable,
+      availableOppAttackers.map(p => p.index)
+    );
+  }, [matrix, ourDefender, oppDefender, ourRemaining, availableOppAttackers]);
+
+  // Get optimal analysis (first in sorted list - best for opponent)
+  const oppOptimal = oppAttackerAnalyses?.[0] ?? null;
+
+  // Compare actual selection to optimal
+  const opponentComparison = useMemo(() => {
+    if (!oppAttackerAnalyses || !oppAttacker1 || !oppAttacker2) return null;
+
+    // Find the analysis for their actual selection
+    const actualAnalysis = oppAttackerAnalyses.find(a =>
+      (a.attackers[0] === oppAttacker1.index && a.attackers[1] === oppAttacker2.index) ||
+      (a.attackers[0] === oppAttacker2.index && a.attackers[1] === oppAttacker1.index)
+    );
+
+    if (!actualAnalysis || !oppOptimal) return null;
+
+    // Mistake magnitude in terms of points they gave up (from their perspective)
+    const mistakeMagnitude = oppOptimal.totalExpectedValueForOpp - actualAnalysis.totalExpectedValueForOpp;
+
+    return {
+      optimalScoreForUs: oppOptimal.expectedScoreForUs,
+      optimalTotalForOpp: oppOptimal.totalExpectedValueForOpp,
+      actualScoreForUs: actualAnalysis.expectedScoreForUs,
+      actualTotalForOpp: actualAnalysis.totalExpectedValueForOpp,
+      mistakeMagnitude,
+      playedOptimally: Math.abs(mistakeMagnitude) < 0.01,
+      optimalPairNames: oppOptimal.attackers.map(idx =>
+        availableOppAttackers.find(p => p.index === idx)?.name
+      ),
+    };
+  }, [oppAttackerAnalyses, oppOptimal, oppAttacker1, oppAttacker2, availableOppAttackers]);
 
   return (
     <div className="p-4 space-y-6">
@@ -153,6 +204,63 @@ export function AttackerRevealContent({
           </Card>
         )}
       </div>
+
+      {/* Opponent Analysis - Before Selection */}
+      {oppOptimal && !isValid && (
+        <Card className="bg-amber-50 border-amber-200 p-4">
+          <h4 className="text-sm font-medium text-amber-800 mb-2">
+            Opponent's Optimal Play
+          </h4>
+          <div className="text-sm text-amber-700">
+            Best attackers for them gives us:{' '}
+            <ScoreBadge score={oppOptimal.expectedScoreForUs} size="sm" showDelta />
+          </div>
+          <div className="text-xs text-amber-600 mt-1">
+            Optimal pair: {oppOptimal.attackers.map(idx =>
+              availableOppAttackers.find(p => p.index === idx)?.name
+            ).join(' + ')}
+          </div>
+        </Card>
+      )}
+
+      {/* Opponent Analysis - After Selection */}
+      {opponentComparison && isValid && (
+        <Card className={`p-4 ${opponentComparison.playedOptimally
+          ? 'bg-red-50 border-red-200'
+          : 'bg-green-50 border-green-200'}`}>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium">
+              {isForced
+                ? 'Opponent Had No Choice'
+                : opponentComparison.playedOptimally
+                  ? 'Opponent Played Optimally'
+                  : 'Opponent Made a Mistake!'}
+            </h4>
+            {!opponentComparison.playedOptimally && !isForced && (
+              <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
+                +{opponentComparison.mistakeMagnitude.toFixed(1)} for us
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Optimal for Them</div>
+              <ScoreBadge score={opponentComparison.optimalScoreForUs} size="sm" showDelta />
+              <div className="text-xs text-gray-500 mt-1">
+                ({opponentComparison.optimalPairNames.join(' + ')})
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Their Selection</div>
+              <ScoreBadge score={opponentComparison.actualScoreForUs} size="sm" showDelta />
+              <div className="text-xs text-gray-500 mt-1">
+                ({oppAttacker1?.name} + {oppAttacker2?.name})
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Summary */}
       {isValid && (
