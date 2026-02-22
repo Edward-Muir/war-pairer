@@ -159,8 +159,10 @@ export function AttackerRevealContent({
 
     return {
       optimalScoreForUs: oppOptimal.expectedScoreForUs,
+      optimalTotalForUs: oppOptimal.totalExpectedValueForUs,
       optimalTotalForOpp: oppOptimal.totalExpectedValueForOpp,
       actualScoreForUs: actualAnalysis.expectedScoreForUs,
+      actualTotalForUs: actualAnalysis.totalExpectedValueForUs,
       actualTotalForOpp: actualAnalysis.totalExpectedValueForOpp,
       mistakeMagnitude,
       playedOptimally: Math.abs(mistakeMagnitude) < 0.01,
@@ -291,14 +293,14 @@ export function AttackerRevealContent({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-xs text-gray-500 mb-1">Optimal for Them</div>
-              <ScoreBadge score={opponentComparison.optimalScoreForUs} size="sm" showDelta />
+              <ScoreBadge score={opponentComparison.optimalTotalForUs} size="sm" showDelta />
               <div className="text-xs text-gray-500 mt-1">
                 ({opponentComparison.optimalPairNames.join(' + ')})
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Their Selection</div>
-              <ScoreBadge score={opponentComparison.actualScoreForUs} size="sm" showDelta />
+              <ScoreBadge score={opponentComparison.actualTotalForUs} size="sm" showDelta />
               <div className="text-xs text-gray-500 mt-1">
                 ({oppAttacker1?.faction} + {oppAttacker2?.faction})
               </div>

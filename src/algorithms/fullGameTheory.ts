@@ -66,6 +66,8 @@ export interface OpponentAttackerAnalysis {
   expectedScoreForUs: number
   /** What opponent scores from this immediate pairing (20 - ourScore) */
   expectedScoreForOpp: number
+  /** Our total expected value including future rounds */
+  totalExpectedValueForUs: number
   /** Opponent's total expected value including future rounds */
   totalExpectedValueForOpp: number
   /** Which attacker they'd force to face our defender (lower score for us) */
@@ -370,6 +372,7 @@ export function analyzeOpponentAttackerPhase(
         attackers: [oppAttacker1, oppAttacker2],
         expectedScoreForUs,
         expectedScoreForOpp,
+        totalExpectedValueForUs,
         totalExpectedValueForOpp,
         forcedMatchup,
         isOptimal: false,
