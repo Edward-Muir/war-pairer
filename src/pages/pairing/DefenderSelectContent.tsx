@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/Common/Button';
 import { DefenderCard } from '@/components/Cards/DefenderCard';
 import { usePairingStore } from '@/store/pairingStore';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useHaptic } from '@/hooks/useHaptic';
 import { analyzeDefenderPhase } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
 
@@ -14,6 +17,8 @@ export function DefenderSelectContent({
   round,
   onNext,
 }: DefenderSelectContentProps) {
+  const reducedMotion = useReducedMotion();
+  const { haptics } = useHaptic();
   const {
     matrix,
     ourRemaining,
@@ -23,6 +28,11 @@ export function DefenderSelectContent({
   } = usePairingStore();
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  const handleSelectPlayer = (player: Player) => {
+    haptics.select();
+    setSelectedPlayer(player);
+  };
 
   // Memoize analysis to prevent recalculation on every render
   const { defenderOptions, gameValue } = useMemo(() => {
@@ -77,17 +87,31 @@ export function DefenderSelectContent({
         </span>
       </div>
 
-      {defenderOptions.map(({ player, analysis, rank }) => (
-        <DefenderCard
-          key={player.id}
-          player={player}
-          analysis={analysis}
-          opponentPlayers={matrix.oppTeam}
-          rank={rank}
-          selected={selectedPlayer?.id === player.id}
-          onClick={() => setSelectedPlayer(player)}
-        />
-      ))}
+      <motion.div
+        className="space-y-4"
+        variants={reducedMotion ? undefined : { animate: { transition: { staggerChildren: 0.04 } } }}
+        initial="initial"
+        animate="animate"
+      >
+        {defenderOptions.map(({ player, analysis, rank }) => (
+          <motion.div
+            key={player.id}
+            variants={reducedMotion
+              ? { initial: { opacity: 1, y: 0 }, animate: { opacity: 1, y: 0 } }
+              : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0, transition: { duration: 0.2 } } }
+            }
+          >
+            <DefenderCard
+              player={player}
+              analysis={analysis}
+              opponentPlayers={matrix.oppTeam}
+              rank={rank}
+              selected={selectedPlayer?.id === player.id}
+              onClick={() => handleSelectPlayer(player)}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
 
       <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
         <Button

@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/Common/Button';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { AttackerPairCard } from '@/components/Cards/AttackerPairCard';
 import { usePairingStore } from '@/store/pairingStore';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useHaptic } from '@/hooks/useHaptic';
 import { analyzeAttackerPhase } from '@/algorithms/fullGameTheory';
 import type { Phase } from '@/store/types';
 import type { FullAttackerAnalysis } from '@/algorithms/fullGameTheory';
@@ -16,6 +19,8 @@ export function AttackerSelectContent({
   round,
   onNext,
 }: AttackerSelectContentProps) {
+  const reducedMotion = useReducedMotion();
+  const { haptics } = useHaptic();
   const {
     matrix,
     ourRemaining,
@@ -28,6 +33,11 @@ export function AttackerSelectContent({
   const [selectedPair, setSelectedPair] = useState<FullAttackerAnalysis | null>(
     null
   );
+
+  const handleSelectPair = (analysis: FullAttackerAnalysis) => {
+    haptics.select();
+    setSelectedPair(analysis);
+  };
 
   const ourDefender = round === 1 ? round1.ourDefender : round2.ourDefender;
   const oppDefender = round === 1 ? round1.oppDefender : round2.oppDefender;
@@ -129,23 +139,35 @@ export function AttackerSelectContent({
           </p>
         )}
 
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          variants={reducedMotion ? undefined : { animate: { transition: { staggerChildren: 0.04 } } }}
+          initial="initial"
+          animate="animate"
+        >
           {analyses.map((analysis, idx) => (
-            <AttackerPairCard
+            <motion.div
               key={`${analysis.attackers[0]}-${analysis.attackers[1]}`}
-              analysis={analysis}
-              ourPlayers={ourRemaining}
-              oppDefender={oppDefender}
-              rank={idx + 1}
-              selected={
-                selectedPair?.attackers[0] === analysis.attackers[0] &&
-                selectedPair?.attackers[1] === analysis.attackers[1]
+              variants={reducedMotion
+                ? { initial: { opacity: 1, y: 0 }, animate: { opacity: 1, y: 0 } }
+                : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0, transition: { duration: 0.2 } } }
               }
-              onClick={() => setSelectedPair(analysis)}
-              disabled={isForced && idx > 0}
-            />
+            >
+              <AttackerPairCard
+                analysis={analysis}
+                ourPlayers={ourRemaining}
+                oppDefender={oppDefender}
+                rank={idx + 1}
+                selected={
+                  selectedPair?.attackers[0] === analysis.attackers[0] &&
+                  selectedPair?.attackers[1] === analysis.attackers[1]
+                }
+                onClick={() => handleSelectPair(analysis)}
+                disabled={isForced && idx > 0}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">

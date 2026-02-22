@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
-import { PlayerPicker } from '@/components/Inputs/PlayerPicker';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { getBestAttackerPair } from '@/algorithms/attackerAnalysis';
 import { usePairingStore } from '@/store/pairingStore';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useHaptic } from '@/hooks/useHaptic';
 import type { Phase, Player } from '@/store/types';
 
 interface DefenderRevealContentProps {
@@ -13,10 +15,24 @@ interface DefenderRevealContentProps {
   onNext: (phase: Phase) => void;
 }
 
+const listContainer = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
+const listItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+};
+const noMotionItem = {
+  initial: { opacity: 1, y: 0 },
+  animate: { opacity: 1, y: 0 },
+};
+
 export function DefenderRevealContent({
   round,
   onNext,
 }: DefenderRevealContentProps) {
+  const reducedMotion = useReducedMotion();
+  const { haptics } = useHaptic();
   const { round1, round2, oppRemaining, ourRemaining, matrix, setOppDefender1, setOppDefender2 } =
     usePairingStore();
 
@@ -53,6 +69,11 @@ export function DefenderRevealContent({
     );
   }
 
+  const handleSelectOppDefender = (player: Player) => {
+    haptics.select();
+    setSelectedOppDefender(player);
+  };
+
   const handleConfirm = () => {
     if (!selectedOppDefender) return;
 
@@ -64,6 +85,8 @@ export function DefenderRevealContent({
       onNext('attacker-2-select');
     }
   };
+
+  const itemVariants = reducedMotion ? noMotionItem : listItem;
 
   return (
     <div className="p-4 space-y-6">
@@ -80,20 +103,26 @@ export function DefenderRevealContent({
         <h3 className="text-sm font-medium text-gray-500 mb-2">
           Opponent's Defender
         </h3>
-        <Card className="p-4">
-          <p className="text-sm text-gray-600 mb-4">
-            Enter the defender your opponent has selected:
-          </p>
-          <PlayerPicker
-            players={oppRemaining}
-            value={selectedOppDefender}
-            onChange={setSelectedOppDefender}
-            placeholder="Select opponent's defender..."
-            label="Opponent's Defender"
-            useModal
-            isOpponent
-          />
-        </Card>
+        <p className="text-sm text-gray-600 mb-3">
+          Select the defender your opponent has chosen:
+        </p>
+        <motion.div
+          className="space-y-2"
+          variants={reducedMotion ? undefined : listContainer}
+          initial="initial"
+          animate="animate"
+        >
+          {oppRemaining.map((player) => (
+            <motion.div key={player.id} variants={itemVariants}>
+              <PlayerCard
+                player={player}
+                isOpponent
+                selected={selectedOppDefender?.id === player.id}
+                onClick={() => handleSelectOppDefender(player)}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
 
       {/* Comparison (once both selected) */}

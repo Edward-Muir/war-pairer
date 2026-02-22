@@ -4,6 +4,7 @@ import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
+import { useHaptic } from '@/hooks/useHaptic';
 import type { Phase, Player } from '@/store/types';
 
 interface DefenderChooseContentProps {
@@ -15,6 +16,7 @@ export function DefenderChooseContent({
   round,
   onNext,
 }: DefenderChooseContentProps) {
+  const { haptics } = useHaptic();
   const {
     matrix,
     round1,
@@ -32,6 +34,16 @@ export function DefenderChooseContent({
 
   // Opponent's defender chooses which of our attackers to face
   const [oppChoice, setOppChoice] = useState<Player | null>(null);
+
+  const handleOurChoice = (player: Player) => {
+    haptics.select();
+    setOurChoice(player);
+  };
+
+  const handleOppChoice = (player: Player) => {
+    haptics.select();
+    setOppChoice(player);
+  };
 
   if (!matrix || !ourDefender || !oppDefender || !ourAttackers || !oppAttackers) {
     return (
@@ -110,7 +122,7 @@ export function DefenderChooseContent({
               return (
                 <Card
                   key={attacker.id}
-                  onClick={() => setOurChoice(attacker)}
+                  onClick={() => handleOurChoice(attacker)}
                   selected={isSelected}
                   className="p-3"
                 >
@@ -164,7 +176,7 @@ export function DefenderChooseContent({
                   player={attacker}
                   score={score}
                   selected={oppChoice?.id === attacker.id}
-                  onClick={() => setOppChoice(attacker)}
+                  onClick={() => handleOppChoice(attacker)}
                 />
               );
             })}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
-import { PlayerPicker } from '@/components/Inputs/PlayerPicker';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useHaptic } from '@/hooks/useHaptic';
 import { analyzeOpponentAttackerPhase } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
 
@@ -13,10 +15,24 @@ interface AttackerRevealContentProps {
   onNext: (phase: Phase) => void;
 }
 
+const listContainer = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
+const listItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+};
+const noMotionItem = {
+  initial: { opacity: 1, y: 0 },
+  animate: { opacity: 1, y: 0 },
+};
+
 export function AttackerRevealContent({
   round,
   onNext,
 }: AttackerRevealContentProps) {
+  const reducedMotion = useReducedMotion();
+  const { haptics } = useHaptic();
   const {
     matrix,
     ourRemaining,
@@ -32,8 +48,8 @@ export function AttackerRevealContent({
   const oppDefender = round === 1 ? round1.oppDefender : round2.oppDefender;
   const ourAttackers = round === 1 ? round1.ourAttackers : round2.ourAttackers;
 
-  const [oppAttacker1, setOppAttacker1] = useState<Player | null>(null);
-  const [oppAttacker2, setOppAttacker2] = useState<Player | null>(null);
+  // Multi-select state: track selected player IDs (max 2)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Get available opponent attackers (remaining minus their defender)
   const availableOppAttackers = oppRemaining.filter(
@@ -45,10 +61,17 @@ export function AttackerRevealContent({
 
   useEffect(() => {
     if (isForced && availableOppAttackers.length === 2) {
-      setOppAttacker1(availableOppAttackers[0]);
-      setOppAttacker2(availableOppAttackers[1]);
+      setSelectedIds(new Set(availableOppAttackers.map(p => p.id)));
     }
   }, [isForced, availableOppAttackers]);
+
+  // Derive selected players from IDs
+  const selectedPlayers = useMemo(() => {
+    return availableOppAttackers.filter(p => selectedIds.has(p.id));
+  }, [availableOppAttackers, selectedIds]);
+
+  const oppAttacker1 = selectedPlayers[0] ?? null;
+  const oppAttacker2 = selectedPlayers[1] ?? null;
 
   if (!ourDefender || !oppDefender || !ourAttackers) {
     return (
@@ -57,6 +80,21 @@ export function AttackerRevealContent({
       </div>
     );
   }
+
+  const handleTogglePlayer = (player: Player) => {
+    haptics.select();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(player.id)) {
+        // Deselect
+        next.delete(player.id);
+      } else if (next.size < 2) {
+        // Select (if under limit)
+        next.add(player.id);
+      }
+      return next;
+    });
+  };
 
   const handleConfirm = () => {
     if (!oppAttacker1 || !oppAttacker2) return;
@@ -132,6 +170,8 @@ export function AttackerRevealContent({
     };
   }, [oppAttackerAnalyses, oppOptimal, oppAttacker1, oppAttacker2, availableOppAttackers]);
 
+  const itemVariants = reducedMotion ? noMotionItem : listItem;
+
   return (
     <div className="p-4 space-y-6">
       {/* Our Attackers */}
@@ -159,7 +199,7 @@ export function AttackerRevealContent({
             </p>
             {availableOppAttackers.map((player) => {
               const score = getExpectedScore(ourDefender.index, player.index);
-              const isForced = forcedAttacker?.id === player.id;
+              const isForcedPlayer = forcedAttacker?.id === player.id;
               return (
                 <div key={player.id} className="flex items-center gap-2">
                   <div className="flex-1">
@@ -167,7 +207,7 @@ export function AttackerRevealContent({
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <ScoreBadge score={score} size="sm" showDelta />
-                    {isForced && (
+                    {isForcedPlayer && (
                       <span className="text-xs text-red-600">Forced</span>
                     )}
                   </div>
@@ -176,34 +216,37 @@ export function AttackerRevealContent({
             })}
           </div>
         ) : (
-          <Card className="p-4">
-            <p className="text-sm text-gray-600 mb-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-3">
               Select the two attackers your opponent has sent against your
               defender:
             </p>
-            <div className="space-y-4">
-              <PlayerPicker
-                players={availableOppAttackers}
-                value={oppAttacker1}
-                onChange={setOppAttacker1}
-                placeholder="Select first attacker..."
-                label="First Attacker"
-                useModal
-                isOpponent
-                disabledPlayers={oppAttacker2 ? [oppAttacker2] : []}
-              />
-              <PlayerPicker
-                players={availableOppAttackers}
-                value={oppAttacker2}
-                onChange={setOppAttacker2}
-                placeholder="Select second attacker..."
-                label="Second Attacker"
-                useModal
-                isOpponent
-                disabledPlayers={oppAttacker1 ? [oppAttacker1] : []}
-              />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500">
+                {selectedIds.size} of 2 selected
+              </span>
+              {selectedIds.size === 2 && (
+                <span className="text-xs font-medium text-blue-600">Ready</span>
+              )}
             </div>
-          </Card>
+            <motion.div
+              className="space-y-2"
+              variants={reducedMotion ? undefined : listContainer}
+              initial="initial"
+              animate="animate"
+            >
+              {availableOppAttackers.map((player) => (
+                <motion.div key={player.id} variants={itemVariants}>
+                  <PlayerCard
+                    player={player}
+                    isOpponent
+                    selected={selectedIds.has(player.id)}
+                    onClick={() => handleTogglePlayer(player)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
         )}
       </div>
 

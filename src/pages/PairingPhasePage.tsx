@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { List, Home } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConfirmationModal } from '@/components/Common/ConfirmationModal';
 import { LockedPairingsDrawer } from '@/components/Drawers/LockedPairingsDrawer';
 import { usePairingStore } from '@/store/pairingStore';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { Phase } from '@/store/types';
 
 // Phase content components
@@ -65,6 +67,7 @@ export function PairingPhasePage() {
     phase: string;
   }>();
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
   const { setPhase, matrix, pairings, reset: resetPairingStore } = usePairingStore();
 
   // UI state
@@ -189,7 +192,17 @@ export function PairingPhasePage() {
         currentPhase={currentPhase}
         rightAction={headerRightActions}
       >
-        {renderContent()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPhase}
+            initial={reducedMotion ? undefined : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reducedMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </Layout>
 
       {/* Abandon Pairing Confirmation */}
