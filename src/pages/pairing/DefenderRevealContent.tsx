@@ -5,6 +5,7 @@ import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { getBestAttackerPair } from '@/algorithms/attackerAnalysis';
+import { analyzeDefenderPhase, getOpponentMatrix } from '@/algorithms/fullGameTheory';
 import { usePairingStore } from '@/store/pairingStore';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useHaptic } from '@/hooks/useHaptic';
@@ -60,6 +61,41 @@ export function DefenderRevealContent({
     const forced = availableAttackers.find(p => p.index === bestPairAnalysis.forcedMatchup);
     return p1 && p2 ? { p1, p2, forced } : null;
   }, [bestPairAnalysis, availableAttackers]);
+
+  // Analyze opponent's defender options from their perspective
+  const oppDefenderAnalysis = useMemo(() => {
+    if (!matrix) return null;
+    const oppMatrix = getOpponentMatrix(matrix.scores);
+    const oppIndices = oppRemaining.map(p => p.index);
+    const ourIndices = ourRemaining.map(p => p.index);
+    return analyzeDefenderPhase(oppMatrix, oppIndices, ourIndices);
+  }, [matrix, oppRemaining, ourRemaining]);
+
+  // Get optimal defender info
+  const oppOptimal = oppDefenderAnalysis?.defenderAnalyses[0] ?? null;
+
+  // Compare actual selection to optimal
+  const opponentComparison = useMemo(() => {
+    if (!oppDefenderAnalysis || !selectedOppDefender || !oppOptimal) return null;
+
+    const actualAnalysis = oppDefenderAnalysis.defenderAnalyses.find(
+      a => a.playerIndex === selectedOppDefender.index
+    );
+    if (!actualAnalysis) return null;
+
+    // Mistake magnitude from opponent's perspective (their game value loss)
+    // Higher gameValue = better for opponent as defender
+    const mistakeMagnitude = oppOptimal.gameValue - actualAnalysis.gameValue;
+
+    return {
+      optimalPlayerIndex: oppOptimal.playerIndex,
+      optimalGameValue: oppOptimal.gameValue,
+      actualGameValue: actualAnalysis.gameValue,
+      mistakeMagnitude,
+      playedOptimally: Math.abs(mistakeMagnitude) < 0.01,
+      optimalFaction: oppRemaining.find(p => p.index === oppOptimal.playerIndex)?.faction,
+    };
+  }, [oppDefenderAnalysis, oppOptimal, selectedOppDefender, oppRemaining]);
 
   if (!ourDefender) {
     return (
@@ -124,6 +160,61 @@ export function DefenderRevealContent({
           ))}
         </motion.div>
       </div>
+
+      {/* Opponent Analysis - Before Selection */}
+      {oppOptimal && !selectedOppDefender && (
+        <Card className="bg-amber-50 border-amber-200 p-4">
+          <h4 className="text-sm font-medium text-amber-800 mb-2">
+            Opponent's Optimal Defender
+          </h4>
+          <div className="text-sm text-amber-700">
+            Best defender for them:{' '}
+            <span className="font-medium">
+              {oppRemaining.find(p => p.index === oppOptimal.playerIndex)?.faction}
+            </span>
+          </div>
+          <div className="text-xs text-amber-600 mt-1">
+            Game value (for them): {oppOptimal.gameValue.toFixed(1)}
+          </div>
+        </Card>
+      )}
+
+      {/* Opponent Analysis - After Selection */}
+      {opponentComparison && selectedOppDefender && (
+        <Card className={`p-4 ${opponentComparison.playedOptimally
+          ? 'bg-red-50 border-red-200'
+          : 'bg-green-50 border-green-200'}`}>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium">
+              {opponentComparison.playedOptimally
+                ? 'Opponent Played Optimally'
+                : 'Opponent Made a Mistake!'}
+            </h4>
+            {!opponentComparison.playedOptimally && (
+              <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
+                +{opponentComparison.mistakeMagnitude.toFixed(1)} for us
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Optimal for Them</div>
+              <ScoreBadge score={opponentComparison.optimalGameValue} size="sm" showDelta />
+              <div className="text-xs text-gray-500 mt-1">
+                ({opponentComparison.optimalFaction})
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Their Selection</div>
+              <ScoreBadge score={opponentComparison.actualGameValue} size="sm" showDelta />
+              <div className="text-xs text-gray-500 mt-1">
+                ({selectedOppDefender.faction})
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Comparison (once both selected) */}
       {selectedOppDefender && (

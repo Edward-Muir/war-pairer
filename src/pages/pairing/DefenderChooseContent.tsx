@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
 import { usePairingStore } from '@/store/pairingStore';
 import { useHaptic } from '@/hooks/useHaptic';
+import { evaluateDefenderChoices } from '@/algorithms/fullGameTheory';
+import type { DefenderChoiceAnalysis } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
 
 interface DefenderChooseContentProps {
@@ -21,6 +23,8 @@ export function DefenderChooseContent({
     matrix,
     round1,
     round2,
+    ourRemaining,
+    oppRemaining,
     choosePairing,
   } = usePairingStore();
 
@@ -63,15 +67,22 @@ export function DefenderChooseContent({
     return matrix.scores[attacker.index]?.[oppDefender.index] ?? 10;
   };
 
-  // Determine recommended choices (higher score is better for us)
-  const ourScores = oppAttackers.map((a) => ({
-    player: a,
-    score: getScoreVsAttacker(a),
-  }));
-  const recommendedOurChoice =
-    ourScores[0].score >= ourScores[1].score
-      ? oppAttackers[0]
-      : oppAttackers[1];
+  // Game-theoretic analysis: considers future rounds, not just immediate score
+  const choiceAnalyses = useMemo(() => {
+    return evaluateDefenderChoices(
+      matrix.scores,
+      ourDefender.index,
+      oppDefender.index,
+      [ourAttackers[0].index, ourAttackers[1].index],
+      [oppAttackers[0].index, oppAttackers[1].index],
+      ourRemaining.map((p) => p.index),
+      oppRemaining.map((p) => p.index)
+    );
+  }, [matrix, ourDefender, oppDefender, ourAttackers, oppAttackers, ourRemaining, oppRemaining]);
+
+  const getAnalysisForAttacker = (attacker: Player): DefenderChoiceAnalysis | undefined => {
+    return choiceAnalyses.find((a) => a.chosenOppAttacker === attacker.index);
+  };
 
   const handleConfirm = () => {
     if (!ourChoice || !oppChoice) return;
@@ -116,7 +127,8 @@ export function DefenderChooseContent({
           <div className="space-y-2">
             {oppAttackers.map((attacker) => {
               const score = getScoreVsAttacker(attacker);
-              const isRecommended = attacker.id === recommendedOurChoice.id;
+              const analysis = getAnalysisForAttacker(attacker);
+              const isRecommended = analysis?.isRecommended ?? false;
               const isSelected = ourChoice?.id === attacker.id;
 
               return (
@@ -141,7 +153,14 @@ export function DefenderChooseContent({
                         </div>
                       </div>
                     </div>
-                    <ScoreBadge score={score} showDelta />
+                    <div className="flex items-center gap-2">
+                      {analysis && (
+                        <span className="text-xs text-gray-500">
+                          EV {analysis.totalExpectedScore.toFixed(0)}
+                        </span>
+                      )}
+                      <ScoreBadge score={score} showDelta />
+                    </div>
                   </div>
                 </Card>
               );

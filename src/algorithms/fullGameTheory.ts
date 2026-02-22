@@ -394,6 +394,107 @@ export function analyzeOpponentAttackerPhase(
   return analyses
 }
 
+// ============================================================================
+// Defender Choice Evaluation (at defender-choose phase)
+// ============================================================================
+
+/** Analysis of a single defender choice option */
+export interface DefenderChoiceAnalysis {
+  /** The opponent attacker our defender would face */
+  chosenOppAttacker: number
+  /** Immediate score from our defender vs chosen attacker */
+  immediateScore: number
+  /** Total expected score (immediate + opponent defender matchup + future rounds) */
+  totalExpectedScore: number
+  /** Whether this is the recommended choice (strictly best total) */
+  isRecommended: boolean
+}
+
+/**
+ * Evaluate the total expected score for each choice our defender can make
+ * at the defender-choose phase. Uses backward induction to account for
+ * the impact on future rounds, not just the immediate matchup score.
+ *
+ * @param matrix - The matchup matrix
+ * @param ourDefender - Index of our defender
+ * @param oppDefender - Index of opponent's defender
+ * @param ourAttackers - Our two attacker indices
+ * @param oppAttackers - Opponent's two attacker indices sent against our defender
+ * @param ourRemainingPool - All our remaining player indices (including defender + attackers)
+ * @param oppRemainingPool - All opponent remaining player indices (including defender + attackers)
+ * @returns Analysis for each opponent attacker choice, sorted by total expected score descending
+ */
+export function evaluateDefenderChoices(
+  matrix: number[][],
+  ourDefender: number,
+  oppDefender: number,
+  ourAttackers: [number, number],
+  oppAttackers: [number, number],
+  ourRemainingPool: number[],
+  oppRemainingPool: number[]
+): DefenderChoiceAnalysis[] {
+  // Opponent's defender choice is invariant to our choice (simultaneous, independent player sets)
+  const ourAtt1Score = matrix[ourAttackers[0]][oppDefender]
+  const ourAtt2Score = matrix[ourAttackers[1]][oppDefender]
+  const oppDefenderScore = Math.min(ourAtt1Score, ourAtt2Score)
+  const chosenOurAttacker =
+    ourAtt1Score <= ourAtt2Score ? ourAttackers[0] : ourAttackers[1]
+
+  const analyses: DefenderChoiceAnalysis[] = oppAttackers.map(
+    (chosenOppAttacker) => {
+      const immediateScore = matrix[ourDefender][chosenOppAttacker]
+
+      // Remaining pools after both pairings are locked:
+      // Remove ourDefender and the our attacker that opponent's defender chose
+      // Remove oppDefender and the opp attacker that our defender chose
+      const newOurRemaining = ourRemainingPool.filter(
+        (p) => p !== ourDefender && p !== chosenOurAttacker
+      )
+      const newOppRemaining = oppRemainingPool.filter(
+        (p) => p !== oppDefender && p !== chosenOppAttacker
+      )
+
+      // Evaluate future rounds
+      let futureValue: number
+      if (newOurRemaining.length === 0) {
+        futureValue = 0
+      } else if (newOurRemaining.length === 1) {
+        futureValue = matrix[newOurRemaining[0]][newOppRemaining[0]]
+      } else {
+        const futureResult = analyzeDefenderPhase(
+          matrix,
+          newOurRemaining,
+          newOppRemaining
+        )
+        futureValue = futureResult.gameValue
+      }
+
+      const totalExpectedScore =
+        immediateScore + oppDefenderScore + futureValue
+
+      return {
+        chosenOppAttacker,
+        immediateScore,
+        totalExpectedScore,
+        isRecommended: false, // Set after sorting
+      }
+    }
+  )
+
+  // Sort by total expected score descending
+  analyses.sort((a, b) => b.totalExpectedScore - a.totalExpectedScore)
+
+  // Mark recommended only if strictly best (no badge on ties)
+  if (
+    analyses.length >= 2 &&
+    analyses[0].totalExpectedScore > analyses[1].totalExpectedScore
+  ) {
+    analyses[0].isRecommended = true
+  }
+
+  return analyses
+}
+
 /**
  * Internal helper to find optimal attacker pair for us.
  * Duplicated logic to avoid circular dependency issues.

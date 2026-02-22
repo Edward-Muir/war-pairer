@@ -58,12 +58,13 @@ export function AttackerRevealContent({
 
   // For round 2, only 2 opponents remain, so auto-select them
   const isForced = availableOppAttackers.length === 2;
+  const availableOppAttackerIds = availableOppAttackers.map(p => p.id).join(',');
 
   useEffect(() => {
     if (isForced && availableOppAttackers.length === 2) {
       setSelectedIds(new Set(availableOppAttackers.map(p => p.id)));
     }
-  }, [isForced, availableOppAttackers]);
+  }, [isForced, availableOppAttackerIds]);
 
   // Derive selected players from IDs
   const selectedPlayers = useMemo(() => {

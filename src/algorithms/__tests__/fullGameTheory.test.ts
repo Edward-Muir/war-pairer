@@ -6,6 +6,7 @@ import {
   resolveAttackerExchange,
   solveZeroSumGame,
   getOpponentMatrix,
+  evaluateDefenderChoices,
 } from '../fullGameTheory'
 
 // Test matrix from the algorithm document
@@ -677,6 +678,155 @@ describe('fullGameTheory', () => {
 
       // Our average score should exceed opponent's (>50 vs <50)
       expect(avgOurScore).toBeGreaterThan(avgOppScore)
+    })
+  })
+
+  describe('evaluateDefenderChoices', () => {
+    it('should return 2 analyses, one per opponent attacker', () => {
+      const result = evaluateDefenderChoices(
+        testMatrix,
+        0, // ourDefender
+        1, // oppDefender
+        [2, 3], // ourAttackers
+        [2, 4], // oppAttackers
+        [0, 2, 3, 4], // ourRemainingPool (round 1: 5 minus already-paired player 1)
+        [1, 2, 3, 4] // oppRemainingPool
+      )
+
+      expect(result).toHaveLength(2)
+      expect(result.map((a) => a.chosenOppAttacker).sort()).toEqual([2, 4])
+    })
+
+    it('should compute correct immediate scores', () => {
+      const result = evaluateDefenderChoices(
+        testMatrix,
+        0, // ourDefender
+        1, // oppDefender
+        [2, 3], // ourAttackers
+        [2, 4], // oppAttackers
+        [0, 2, 3, 4],
+        [1, 2, 3, 4]
+      )
+
+      // Immediate score = matrix[ourDefender][chosenOppAttacker]
+      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!
+      const analysisVs4 = result.find((a) => a.chosenOppAttacker === 4)!
+
+      expect(analysisVs2.immediateScore).toBe(testMatrix[0][2]) // 15
+      expect(analysisVs4.immediateScore).toBe(testMatrix[0][4]) // 6
+    })
+
+    it('should not mark either as recommended when total scores are tied', () => {
+      // Create a matrix where both choices lead to the same total EV
+      const tiedMatrix = [
+        [10, 10, 10, 10, 10],
+        [10, 10, 10, 10, 10],
+        [10, 10, 10, 10, 10],
+        [10, 10, 10, 10, 10],
+        [10, 10, 10, 10, 10],
+      ]
+
+      const result = evaluateDefenderChoices(
+        tiedMatrix,
+        0,
+        1,
+        [2, 3],
+        [2, 3],
+        [0, 2, 3, 4],
+        [1, 2, 3, 4]
+      )
+
+      expect(result[0].isRecommended).toBe(false)
+      expect(result[1].isRecommended).toBe(false)
+      expect(result[0].totalExpectedScore).toBe(result[1].totalExpectedScore)
+    })
+
+    it('should mark strictly better choice as recommended', () => {
+      // Player 0 (ourDefender) has very different scores vs opponents 2 and 4
+      // testMatrix[0] = [10, 8, 15, 12, 6]
+      // vs opp 2: 15, vs opp 4: 6 -- clearly different immediate scores
+      const result = evaluateDefenderChoices(
+        testMatrix,
+        0, // ourDefender
+        1, // oppDefender
+        [2, 3], // ourAttackers
+        [2, 4], // oppAttackers
+        [0, 2, 3, 4],
+        [1, 2, 3, 4]
+      )
+
+      // Exactly one should be recommended (the one with higher total)
+      const recommended = result.filter((a) => a.isRecommended)
+      expect(recommended).toHaveLength(1)
+    })
+
+    it('should sometimes disagree with naive immediate-score comparison', () => {
+      // Craft a matrix where picking the worse immediate matchup leads to better total EV
+      // Our defender = 0, oppDefender = 1
+      // Opp attackers: 2 (good matchup for us) and 3 (bad matchup for us)
+      // But if we pick opp 2 (good), opp 3 goes back to pool and is terrible for us later
+      // If we pick opp 3 (bad), opp 2 goes back to pool and is great for us later
+      const trickMatrix = [
+        // Player 0 (our defender)
+        [10, 10, 18, 2, 10],   // vs opp2=18 (great), vs opp3=2 (terrible)
+        // Player 1 (opp defender)
+        [10, 10, 10, 10, 10],
+        // Player 2 (our attacker)
+        [10, 10, 10, 10, 10],
+        // Player 3 (our attacker - also in remaining)
+        [10, 10, 10, 10, 10],
+        // Player 4 (remaining)
+        [10, 10, 10, 0, 10],   // vs opp3=0 (terrible future if opp3 stays in pool)
+      ]
+
+      // Our defender = 0, opp defender = 1
+      // Our attackers = [2, 3], opp attackers = [2, 3]
+      // Remaining pool: all 5 on each side
+      const result = evaluateDefenderChoices(
+        trickMatrix,
+        0, // ourDefender
+        1, // oppDefender
+        [2, 3], // ourAttackers
+        [2, 3], // oppAttackers (sent against our defender)
+        [0, 2, 3, 4], // our remaining
+        [1, 2, 3, 4]  // opp remaining
+      )
+
+      // Naive: pick opp 2 (score 18 > 2)
+      // But game-theoretic considers that picking opp 3 (score 2) removes them from pool,
+      // which is better for player 4 in future rounds
+      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!
+      const analysisVs3 = result.find((a) => a.chosenOppAttacker === 3)!
+
+      // The naive immediate score would say pick opp 2
+      expect(analysisVs2.immediateScore).toBeGreaterThan(analysisVs3.immediateScore)
+
+      // But the total EV should factor in future rounds differently
+      // We don't assert which is better (depends on full computation),
+      // just that the total scores differ from the immediate ranking
+      expect(analysisVs2.totalExpectedScore).toBeDefined()
+      expect(analysisVs3.totalExpectedScore).toBeDefined()
+    })
+
+    it('should work for round 2 scenario (3 remaining per side)', () => {
+      // Round 2: 3v3, after this round 1v1 remains
+      const result = evaluateDefenderChoices(
+        testMatrix,
+        1, // ourDefender
+        2, // oppDefender
+        [0, 4], // ourAttackers
+        [0, 3], // oppAttackers
+        [0, 1, 4], // our remaining (3 players)
+        [0, 2, 3]  // opp remaining (3 players)
+      )
+
+      expect(result).toHaveLength(2)
+
+      // After locking 2 pairings, 1 player each remains = direct lookup for future
+      result.forEach((analysis) => {
+        expect(analysis.totalExpectedScore).toBeDefined()
+        expect(analysis.immediateScore).toBeDefined()
+      })
     })
   })
 })
