@@ -8,6 +8,7 @@ import { TeamCard } from '@/components/Cards/TeamCard';
 import { GameCard } from '@/components/Cards/GameCard';
 import { useTeamStore } from '@/store/teamStore';
 import { useGameStore } from '@/store/gameStore';
+import { APP_VERSION } from '@/version';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -66,7 +67,10 @@ export function HomePage() {
   };
 
   return (
-    <Layout title="UKTC Pairing">
+    <Layout
+      title="UKTC Pairing"
+      rightAction={<span className="text-xs text-gray-400">v{APP_VERSION}</span>}
+    >
       <div className="flex flex-col gap-6 p-4">
         {/* My Teams Section */}
         <section>
