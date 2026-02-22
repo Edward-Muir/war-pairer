@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
+import { UpdatePopup } from '@/components/Common';
+import { useVersionCheck } from '@/hooks/useVersionCheck';
 
 // Implemented pages
 import { HomePage } from '@/pages/HomePage';
@@ -21,6 +23,8 @@ function SettingsPage() {
 }
 
 function App() {
+  const { updateAvailable } = useVersionCheck();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -43,6 +47,8 @@ function App() {
         {/* Settings */}
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
+
+      <UpdatePopup isVisible={updateAvailable} />
     </BrowserRouter>
   );
 }
