@@ -37,6 +37,18 @@ export function formatScoreWithDelta(score: number): string {
 }
 
 /**
+ * Get Tailwind color class for a total EV value.
+ * Normalizes to per-pairing scale (0-20) for consistent coloring.
+ */
+export function evToBackgroundColor(ev: number, totalPairings = 5): string {
+  return scoreToBackgroundColor(ev / totalPairings);
+}
+
+export function evToTextColor(ev: number, totalPairings = 5): string {
+  return scoreToTextColor(ev / totalPairings);
+}
+
+/**
  * Simple score formatting
  */
 export function formatScore(score: number): string {
@@ -79,4 +91,3 @@ export function calculateRoundTotals(pairings: { expectedScore: number; actualSc
     allScoresEntered: allEntered,
   };
 }
-

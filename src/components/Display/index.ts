@@ -6,3 +6,6 @@ export type { RecommendedBadgeProps } from './RecommendedBadge';
 
 export { MatchupPreview } from './MatchupPreview';
 export type { MatchupPreviewProps } from './MatchupPreview';
+
+export { EVBadge } from './EVBadge';
+export type { EVBadgeProps } from './EVBadge';

@@ -1,26 +1,28 @@
-import { Card } from '@/components/Common/Card'
-import type { Player } from '@/store/types'
-import type { DefenderAnalysis } from '@/algorithms/defenderScore'
-import type { FullDefenderAnalysis } from '@/algorithms/fullGameTheory'
-import { scoreToBackgroundColor, scoreToTextColor } from '@/utils/scoring'
+import { Card } from '@/components/Common/Card';
+import { EVBadge } from '@/components/Display/EVBadge';
+import type { Player } from '@/store/types';
+import type { DefenderAnalysis } from '@/algorithms/defenderScore';
+import type { FullDefenderAnalysis } from '@/algorithms/fullGameTheory';
+import { scoreToBackgroundColor, scoreToTextColor } from '@/utils/scoring';
 
 export interface DefenderCardProps {
-  player: Player
-  analysis: DefenderAnalysis | FullDefenderAnalysis
-  opponentPlayers: Player[]
-  rank: number
-  isRecommended?: boolean
-  selected?: boolean
-  disabled?: boolean
-  onClick?: () => void
-  className?: string
+  player: Player;
+  analysis: DefenderAnalysis | FullDefenderAnalysis;
+  opponentPlayers: Player[];
+  rank: number;
+  lockedTotal?: number;
+  isRecommended?: boolean;
+  selected?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
 /** Type guard to check if analysis has full game theory data */
 function isFullAnalysis(
   analysis: DefenderAnalysis | FullDefenderAnalysis
 ): analysis is FullDefenderAnalysis {
-  return 'gameValue' in analysis
+  return 'gameValue' in analysis;
 }
 
 export function DefenderCard({
@@ -28,20 +30,21 @@ export function DefenderCard({
   analysis,
   opponentPlayers,
   rank,
+  lockedTotal = 0,
   isRecommended,
   selected = false,
   disabled = false,
   onClick,
   className = '',
 }: DefenderCardProps) {
-  const showRecommended = isRecommended ?? rank === 1
-  const disabledStyles = disabled ? 'opacity-50 pointer-events-none' : ''
+  const showRecommended = isRecommended ?? rank === 1;
+  const disabledStyles = disabled ? 'opacity-50 pointer-events-none' : '';
 
   // Resolve worst matchup indices to player names
   const worstMatchupNames = analysis.worstMatchups
     .map((idx) => opponentPlayers.find((p) => p.index === idx))
     .filter((p): p is Player => p !== undefined)
-    .map((p) => p.faction)
+    .map((p) => p.faction);
 
   return (
     <Card
@@ -66,23 +69,14 @@ export function DefenderCard({
             {player.index + 1}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate font-semibold text-gray-900">
-              {player.name}
-            </div>
-            <div className="truncate text-sm text-gray-600">
-              {player.faction}
-            </div>
+            <div className="truncate font-semibold text-gray-900">{player.name}</div>
+            <div className="truncate text-sm text-gray-600">{player.faction}</div>
           </div>
           {/* Score badges */}
           <div className="flex shrink-0 flex-col items-end gap-1">
             {/* Game Value (full tree) - shown prominently if available */}
             {isFullAnalysis(analysis) && (
-              <div
-                className={`flex h-10 min-w-[56px] items-center justify-center rounded-lg px-2 text-lg font-bold ${scoreToBackgroundColor(analysis.gameValue)} ${scoreToTextColor(analysis.gameValue)}`}
-                title="Total expected value from full game analysis"
-              >
-                {analysis.gameValue.toFixed(1)}
-              </div>
+              <EVBadge value={analysis.gameValue + lockedTotal} size="lg" />
             )}
             {/* Defender Score (simple metric) */}
             <div
@@ -101,11 +95,9 @@ export function DefenderCard({
         {/* Worst Matchups */}
         <div className="truncate text-sm text-gray-500">
           <span className="font-medium">Worst matchups:</span>{' '}
-          {worstMatchupNames.length > 0
-            ? worstMatchupNames.join(', ')
-            : 'None identified'}
+          {worstMatchupNames.length > 0 ? worstMatchupNames.join(', ') : 'None identified'}
         </div>
       </div>
     </Card>
-  )
+  );
 }

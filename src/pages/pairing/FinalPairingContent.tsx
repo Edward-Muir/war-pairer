@@ -1,6 +1,6 @@
 import { Button } from '@/components/Common/Button';
 import { MatchupPreview } from '@/components/Display/MatchupPreview';
-import { ScoreBadge } from '@/components/Display/ScoreBadge';
+import { EVBadge } from '@/components/Display/EVBadge';
 import { usePairingStore } from '@/store/pairingStore';
 
 interface FinalPairingContentProps {
@@ -8,8 +8,7 @@ interface FinalPairingContentProps {
 }
 
 export function FinalPairingContent({ onComplete }: FinalPairingContentProps) {
-  const { matrix, ourRemaining, oppRemaining, pairings, choosePairing } =
-    usePairingStore();
+  const { matrix, ourRemaining, oppRemaining, pairings, choosePairing } = usePairingStore();
 
   // Should have exactly 1 player remaining on each side
   const ourFinalPlayer = ourRemaining[0];
@@ -24,8 +23,7 @@ export function FinalPairingContent({ onComplete }: FinalPairingContentProps) {
   }
 
   // Get the expected score for the final matchup
-  const finalScore =
-    matrix.scores[ourFinalPlayer.index]?.[oppFinalPlayer.index] ?? 10;
+  const finalScore = matrix.scores[ourFinalPlayer.index]?.[oppFinalPlayer.index] ?? 10;
 
   // Calculate total expected score including the final pairing
   const currentTotal = pairings.reduce((sum, p) => sum + p.expectedScore, 0);
@@ -41,13 +39,10 @@ export function FinalPairingContent({ onComplete }: FinalPairingContentProps) {
     <div className="p-4 space-y-6">
       {/* Final Pairing */}
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
-          Final Pairing (Forced)
-        </h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Final Pairing (Forced)</h3>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p className="text-sm text-gray-600 mb-4">
-            With all other players paired, these final two players must face
-            each other:
+            With all other players paired, these final two players must face each other:
           </p>
           <MatchupPreview
             ourPlayer={ourFinalPlayer}
@@ -89,9 +84,7 @@ export function FinalPairingContent({ onComplete }: FinalPairingContentProps) {
 
       {/* Score Summary */}
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
-          Score Summary
-        </h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Score Summary</h3>
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-600">Current locked pairings:</span>
@@ -103,17 +96,10 @@ export function FinalPairingContent({ onComplete }: FinalPairingContentProps) {
           </div>
           <hr className="my-2 border-gray-200" />
           <div className="flex items-center justify-between">
-            <span className="text-gray-900 font-medium">
-              Projected Total:
-            </span>
-            <ScoreBadge
-              score={projectedTotal}
-              size="lg"
-            />
+            <span className="text-gray-900 font-medium">Projected Total:</span>
+            <EVBadge value={projectedTotal} size="lg" />
           </div>
-          <div className="mt-2 text-center text-sm text-gray-500">
-            (Neutral = 50 points)
-          </div>
+          <div className="mt-2 text-center text-sm text-gray-500">(Neutral = 50 points)</div>
         </div>
       </div>
 

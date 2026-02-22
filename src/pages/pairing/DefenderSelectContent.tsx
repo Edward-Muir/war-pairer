@@ -5,6 +5,7 @@ import { DefenderCard } from '@/components/Cards/DefenderCard';
 import { usePairingStore } from '@/store/pairingStore';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useLockedTotal } from '@/hooks/useLockedTotal';
 import { analyzeDefenderPhase } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
 
@@ -13,19 +14,12 @@ interface DefenderSelectContentProps {
   onNext: (phase: Phase) => void;
 }
 
-export function DefenderSelectContent({
-  round,
-  onNext,
-}: DefenderSelectContentProps) {
+export function DefenderSelectContent({ round, onNext }: DefenderSelectContentProps) {
   const reducedMotion = useReducedMotion();
   const { haptics } = useHaptic();
-  const {
-    matrix,
-    ourRemaining,
-    oppRemaining,
-    setOurDefender1,
-    setOurDefender2,
-  } = usePairingStore();
+  const lockedTotal = useLockedTotal();
+  const { matrix, ourRemaining, oppRemaining, setOurDefender1, setOurDefender2 } =
+    usePairingStore();
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
@@ -80,25 +74,31 @@ export function DefenderSelectContent({
     <div className="p-4 space-y-4">
       <div className="text-sm text-gray-600">
         Select your defender for Round {round}. Players are ranked by their
-        <strong> game value</strong> - the total expected score considering all
-        future rounds with optimal play.
+        <strong> game value</strong> - the total expected score considering all future rounds with
+        optimal play.
         <span className="block mt-1 text-xs text-gray-500">
-          Game value with optimal play: {gameValue.toFixed(1)} points
+          EV with optimal play: {(gameValue + lockedTotal).toFixed(1)} points
         </span>
       </div>
 
       <motion.div
         className="space-y-4"
-        variants={reducedMotion ? undefined : { animate: { transition: { staggerChildren: 0.04 } } }}
+        variants={
+          reducedMotion ? undefined : { animate: { transition: { staggerChildren: 0.04 } } }
+        }
         initial="initial"
         animate="animate"
       >
         {defenderOptions.map(({ player, analysis, rank }) => (
           <motion.div
             key={player.id}
-            variants={reducedMotion
-              ? { initial: { opacity: 1, y: 0 }, animate: { opacity: 1, y: 0 } }
-              : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0, transition: { duration: 0.2 } } }
+            variants={
+              reducedMotion
+                ? { initial: { opacity: 1, y: 0 }, animate: { opacity: 1, y: 0 } }
+                : {
+                    initial: { opacity: 0, y: 8 },
+                    animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                  }
             }
           >
             <DefenderCard
@@ -106,6 +106,7 @@ export function DefenderSelectContent({
               analysis={analysis}
               opponentPlayers={matrix.oppTeam}
               rank={rank}
+              lockedTotal={lockedTotal}
               selected={selectedPlayer?.id === player.id}
               onClick={() => handleSelectPlayer(player)}
             />
@@ -114,12 +115,7 @@ export function DefenderSelectContent({
       </motion.div>
 
       <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!selectedPlayer}
-          onClick={handleConfirm}
-        >
+        <Button variant="primary" fullWidth disabled={!selectedPlayer} onClick={handleConfirm}>
           Confirm Defender
         </Button>
       </div>

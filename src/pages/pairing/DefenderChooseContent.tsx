@@ -3,8 +3,10 @@ import { Button } from '@/components/Common/Button';
 import { Card } from '@/components/Common/Card';
 import { PlayerCard } from '@/components/Cards/PlayerCard';
 import { ScoreBadge } from '@/components/Display/ScoreBadge';
+import { EVBadge } from '@/components/Display/EVBadge';
 import { usePairingStore } from '@/store/pairingStore';
 import { useHaptic } from '@/hooks/useHaptic';
+import { useLockedTotal } from '@/hooks/useLockedTotal';
 import { evaluateDefenderChoices } from '@/algorithms/fullGameTheory';
 import type { DefenderChoiceAnalysis } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
@@ -14,19 +16,10 @@ interface DefenderChooseContentProps {
   onNext: (phase: Phase) => void;
 }
 
-export function DefenderChooseContent({
-  round,
-  onNext,
-}: DefenderChooseContentProps) {
+export function DefenderChooseContent({ round, onNext }: DefenderChooseContentProps) {
   const { haptics } = useHaptic();
-  const {
-    matrix,
-    round1,
-    round2,
-    ourRemaining,
-    oppRemaining,
-    choosePairing,
-  } = usePairingStore();
+  const lockedTotal = useLockedTotal();
+  const { matrix, round1, round2, ourRemaining, oppRemaining, choosePairing } = usePairingStore();
 
   const ourDefender = round === 1 ? round1.ourDefender : round2.ourDefender;
   const oppDefender = round === 1 ? round1.oppDefender : round2.oppDefender;
@@ -38,6 +31,21 @@ export function DefenderChooseContent({
 
   // Opponent's defender chooses which of our attackers to face
   const [oppChoice, setOppChoice] = useState<Player | null>(null);
+
+  // Game-theoretic analysis: considers future rounds, not just immediate score
+  // Must be called before any early returns to satisfy Rules of Hooks
+  const choiceAnalyses = useMemo(() => {
+    if (!matrix || !ourDefender || !oppDefender || !ourAttackers || !oppAttackers) return [];
+    return evaluateDefenderChoices(
+      matrix.scores,
+      ourDefender.index,
+      oppDefender.index,
+      [ourAttackers[0].index, ourAttackers[1].index],
+      [oppAttackers[0].index, oppAttackers[1].index],
+      ourRemaining.map((p) => p.index),
+      oppRemaining.map((p) => p.index)
+    );
+  }, [matrix, ourDefender, oppDefender, ourAttackers, oppAttackers, ourRemaining, oppRemaining]);
 
   const handleOurChoice = (player: Player) => {
     haptics.select();
@@ -51,9 +59,7 @@ export function DefenderChooseContent({
 
   if (!matrix || !ourDefender || !oppDefender || !ourAttackers || !oppAttackers) {
     return (
-      <div className="p-4 text-red-600">
-        Error: Missing data. Please go back and try again.
-      </div>
+      <div className="p-4 text-red-600">Error: Missing data. Please go back and try again.</div>
     );
   }
 
@@ -66,19 +72,6 @@ export function DefenderChooseContent({
   const getAttackerScoreVsDefender = (attacker: Player) => {
     return matrix.scores[attacker.index]?.[oppDefender.index] ?? 10;
   };
-
-  // Game-theoretic analysis: considers future rounds, not just immediate score
-  const choiceAnalyses = useMemo(() => {
-    return evaluateDefenderChoices(
-      matrix.scores,
-      ourDefender.index,
-      oppDefender.index,
-      [ourAttackers[0].index, ourAttackers[1].index],
-      [oppAttackers[0].index, oppAttackers[1].index],
-      ourRemaining.map((p) => p.index),
-      oppRemaining.map((p) => p.index)
-    );
-  }, [matrix, ourDefender, oppDefender, ourAttackers, oppAttackers, ourRemaining, oppRemaining]);
 
   const getAnalysisForAttacker = (attacker: Player): DefenderChoiceAnalysis | undefined => {
     return choiceAnalyses.find((a) => a.chosenOppAttacker === attacker.index);
@@ -107,17 +100,11 @@ export function DefenderChooseContent({
     <div className="p-4 space-y-6">
       {/* Our Defender's Choice Section */}
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
-          Our Defender Chooses
-        </h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Our Defender Chooses</h3>
         <Card className="p-4">
           <div className="text-center mb-4">
-            <div className="font-semibold text-gray-900">
-              {ourDefender.name}
-            </div>
-            <div className="text-sm text-gray-500">
-              {ourDefender.faction}
-            </div>
+            <div className="font-semibold text-gray-900">{ourDefender.name}</div>
+            <div className="text-sm text-gray-500">{ourDefender.faction}</div>
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
@@ -128,7 +115,6 @@ export function DefenderChooseContent({
             {oppAttackers.map((attacker) => {
               const score = getScoreVsAttacker(attacker);
               const analysis = getAnalysisForAttacker(attacker);
-              const isRecommended = analysis?.isRecommended ?? false;
               const isSelected = ourChoice?.id === attacker.id;
 
               return (
@@ -142,22 +128,13 @@ export function DefenderChooseContent({
                     <div className="flex items-center gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900">
-                            {attacker.faction}
-                          </span>
-                          {isRecommended && (
-                            <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
-                              Better
-                            </span>
-                          )}
+                          <span className="font-semibold text-gray-900">{attacker.faction}</span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {analysis && (
-                        <span className="text-xs text-gray-500">
-                          EV {analysis.totalExpectedScore.toFixed(0)}
-                        </span>
+                        <EVBadge value={analysis.totalExpectedScore + lockedTotal} size="sm" />
                       )}
                       <ScoreBadge score={score} showDelta />
                     </div>
@@ -171,19 +148,14 @@ export function DefenderChooseContent({
 
       {/* Opponent Defender's Choice Section */}
       <div>
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
-          Opponent's Defender Chooses
-        </h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Opponent's Defender Chooses</h3>
         <Card className="p-4">
           <div className="text-center mb-4">
-            <div className="font-semibold text-gray-900">
-              {oppDefender.faction}
-            </div>
+            <div className="font-semibold text-gray-900">{oppDefender.faction}</div>
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
-            We sent these 2 attackers. Which one did the opponent choose to
-            face?
+            We sent these 2 attackers. Which one did the opponent choose to face?
           </p>
 
           <div className="space-y-2 mb-4">
@@ -203,8 +175,7 @@ export function DefenderChooseContent({
 
           <div className="text-sm text-gray-500">
             <em>
-              Note: Opponent will typically choose the matchup that's worse
-              for you (lower score).
+              Note: Opponent will typically choose the matchup that's worse for you (lower score).
             </em>
           </div>
         </Card>
@@ -213,9 +184,7 @@ export function DefenderChooseContent({
       {/* Summary of Pairings to Lock */}
       {isValid && (
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Pairings to Lock
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Pairings to Lock</h3>
           <div className="space-y-2">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center justify-between">
@@ -234,10 +203,7 @@ export function DefenderChooseContent({
                   <span className="text-gray-500"> vs </span>
                   <span className="font-semibold">{oppDefender.faction}</span>
                 </div>
-                <ScoreBadge
-                  score={getAttackerScoreVsDefender(oppChoice)}
-                  showDelta
-                />
+                <ScoreBadge score={getAttackerScoreVsDefender(oppChoice)} showDelta />
               </div>
             </div>
           </div>
@@ -245,12 +211,7 @@ export function DefenderChooseContent({
       )}
 
       <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!isValid}
-          onClick={handleConfirm}
-        >
+        <Button variant="primary" fullWidth disabled={!isValid} onClick={handleConfirm}>
           Lock {round === 1 ? '2' : '2 More'} Pairings
         </Button>
       </div>

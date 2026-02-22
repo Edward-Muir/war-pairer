@@ -8,7 +8,6 @@ import { TeamCard } from '@/components/Cards/TeamCard';
 import { GameCard } from '@/components/Cards/GameCard';
 import { useTeamStore } from '@/store/teamStore';
 import { useGameStore } from '@/store/gameStore';
-import { usePairingStore } from '@/store/pairingStore';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -16,13 +15,6 @@ export function HomePage() {
   const [gameToDelete, setGameToDelete] = useState<string | null>(null);
   const { teams, deleteTeam } = useTeamStore();
   const { games, deleteGame } = useGameStore();
-  const { gameId, phase } = usePairingStore();
-
-  // Check for incomplete pairing session
-  const hasIncompletePairing =
-    gameId !== null &&
-    phase !== 'home' &&
-    phase !== 'game-summary';
 
   // Sort teams by most recently updated
   const sortedTeams = [...teams].sort(
@@ -36,16 +28,6 @@ export function HomePage() {
     if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
-
-  const handleResumePairing = () => {
-    if (gameId) {
-      if (phase === 'matrix-entry') {
-        navigate(`/game/${gameId}/matrix`);
-      } else {
-        navigate(`/game/${gameId}/pairing/${phase}`);
-      }
-    }
-  };
 
   const handleEditTeam = (teamId: string) => {
     navigate(`/team/${teamId}/edit`);
@@ -63,11 +45,6 @@ export function HomePage() {
   };
 
   const handleViewGame = (clickedGameId: string) => {
-    // If this game has an active pairing session, resume it
-    if (clickedGameId === gameId && hasIncompletePairing) {
-      handleResumePairing();
-      return;
-    }
     // Non-completed games go to matrix, completed go to summary
     const game = games.find((g) => g.id === clickedGameId);
     if (game && game.status !== 'completed') {
@@ -91,23 +68,6 @@ export function HomePage() {
   return (
     <Layout title="UKTC Pairing">
       <div className="flex flex-col gap-6 p-4">
-        {/* Resume Pairing Banner */}
-        {hasIncompletePairing && (
-          <Card className="border-blue-200 bg-blue-50">
-            <div className="flex flex-col gap-3">
-              <div>
-                <h3 className="font-semibold text-blue-900">Pairing in Progress</h3>
-                <p className="text-sm text-blue-700">
-                  You have an incomplete pairing session. Would you like to continue?
-                </p>
-              </div>
-              <Button variant="primary" onClick={handleResumePairing}>
-                Resume Pairing
-              </Button>
-            </div>
-          </Card>
-        )}
-
         {/* My Teams Section */}
         <section>
           <div className="mb-3 flex items-center justify-between">

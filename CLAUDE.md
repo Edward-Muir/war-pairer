@@ -20,12 +20,43 @@ UKTC Pairing Optimizer - A mobile-first React application for Warhammer 40K team
 
 ```bash
 npm run dev      # Start dev server (port 5173)
-npm run build    # Type check + production build
+npm run build    # Type check + production build (runs prebuild to inject version)
 npm run lint     # Run ESLint
 npm run preview  # Preview production build
 npm test         # Run tests in watch mode (Vitest)
 npm run test:run # Run tests once
 ```
+
+## Releasing & Versioning
+
+Uses `commit-and-tag-version` for semantic versioning with conventional commits.
+
+```bash
+./scripts/release.sh           # Auto-detect bump from commit messages
+./scripts/release.sh patch     # Bump patch (0.1.0 → 0.1.1)
+./scripts/release.sh minor     # Bump minor (0.1.1 → 0.2.0)
+./scripts/release.sh major     # Bump major (0.2.0 → 1.0.0)
+```
+
+**Release flow**: validates clean working directory → bumps `package.json` version → generates `CHANGELOG.md` → runs `scripts/inject-version.cjs` (generates `src/version.ts` + `public/version.json`) → commits + tags → pushes with tags. Vercel auto-deploys on push.
+
+**Version files** (auto-generated, do not edit manually):
+
+- `src/version.ts` — bundled `APP_VERSION` constant
+- `public/version.json` — runtime version check target (fetched by client every 5 minutes)
+
+**Update detection**: `useVersionCheck` hook polls `/version.json` and compares against bundled version. When a mismatch is detected, a forced-update popup appears (no dismiss, reload only). Integrated at the `App.tsx` level.
+
+## Code Quality
+
+**Pre-commit hooks** (Husky + lint-staged):
+
+- `.ts`/`.tsx` files: `eslint --fix` + `prettier --write`
+- `.json`/`.md`/`.css` files: `prettier --write`
+
+**ESLint rules** include: `complexity` (max 15), `max-lines` (max 450), `max-depth` (max 4), `no-explicit-any`, `no-unused-vars`, `no-console` (warn/error allowed).
+
+**Commit messages** should use conventional format: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `chore:`, etc.
 
 ## Architecture
 
@@ -40,6 +71,7 @@ All stores use Zustand's persist middleware for localStorage persistence.
 ### Pairing Algorithm
 
 The app implements game-theoretic optimal pairing:
+
 - **Defender Score**: Second-lowest value in a player's matchup row (guarantees best outcome against optimal attacker pair)
 - **Attacker Analysis**: Evaluate all possible attacker pairs against opponent's defender
 - Algorithms live in `src/algorithms/`
