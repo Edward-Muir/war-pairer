@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/Edward-Muir/war-pairer/compare/v0.1.1...v0.1.2) (2026-02-22)
+
+
+### Features
+
+* Make all score comparisons EV based ([5c40b7e](https://github.com/Edward-Muir/war-pairer/commit/5c40b7e1b34013090545d13fab26074855dad5b9))
+
 ## 0.1.1 (2026-02-22)
 
 
