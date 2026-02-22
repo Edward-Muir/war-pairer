@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
 import { UpdatePopup } from '@/components/Common';
 import { useVersionCheck } from '@/hooks/useVersionCheck';
 
@@ -10,17 +9,6 @@ import { GameSetupPage } from '@/pages/GameSetupPage';
 import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
 import { PairingPhasePage } from '@/pages/PairingPhasePage';
 import { GameSummaryPage } from '@/pages/GameSummaryPage';
-
-// Placeholder pages - will be implemented in later phases
-function SettingsPage() {
-  return (
-    <Layout title="Settings">
-      <div className="p-4">
-        <p className="text-gray-600">Settings page placeholder</p>
-      </div>
-    </Layout>
-  );
-}
 
 function App() {
   const { updateAvailable } = useVersionCheck();
@@ -38,14 +26,8 @@ function App() {
         {/* Game flow */}
         <Route path="/game/new" element={<GameSetupPage />} />
         <Route path="/game/:id/matrix" element={<MatrixEntryPage />} />
-        <Route
-          path="/game/:id/pairing/:phase"
-          element={<PairingPhasePage />}
-        />
+        <Route path="/game/:id/pairing/:phase" element={<PairingPhasePage />} />
         <Route path="/game/:id/summary" element={<GameSummaryPage />} />
-
-        {/* Settings */}
-        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
 
       <UpdatePopup isVisible={updateAvailable} />

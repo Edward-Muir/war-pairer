@@ -108,7 +108,7 @@ export function PairingPhasePage() {
   // Show error if no matrix loaded
   if (!matrix) {
     return (
-      <Layout title="Pairing" showBack onBack={() => navigate(-1)} showNav={false}>
+      <Layout title="Pairing" showBack onBack={() => navigate(-1)}>
         <div className="p-4">
           <p className="text-red-600">
             No pairing session found. Please start from the matrix entry page.
@@ -188,7 +188,6 @@ export function PairingPhasePage() {
         title={title}
         showBack
         onBack={goBack}
-        showNav={false}
         currentPhase={currentPhase}
         rightAction={headerRightActions}
       >
