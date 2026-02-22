@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.3](https://github.com/Edward-Muir/war-pairer/compare/v0.1.2...v0.1.3) (2026-02-22)
+
+
+### Features
+
+* Add version number ([eeaccbe](https://github.com/Edward-Muir/war-pairer/commit/eeaccbee486e46a6031c75528a52ef8775ee6c69))
+
 ## [0.1.2](https://github.com/Edward-Muir/war-pairer/compare/v0.1.1...v0.1.2) (2026-02-22)
 
 
