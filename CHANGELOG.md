@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/Edward-Muir/war-pairer/compare/v0.1.3...v0.1.4) (2026-02-28)
+
+
+### Features
+
+* Add explainations in burger menu ([4dc5f8e](https://github.com/Edward-Muir/war-pairer/commit/4dc5f8eb8a19401bb3a856369d305f543f787b15))
+
 ## [0.1.3](https://github.com/Edward-Muir/war-pairer/compare/v0.1.2...v0.1.3) (2026-02-22)
 
 
