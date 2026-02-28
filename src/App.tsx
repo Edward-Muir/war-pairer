@@ -9,6 +9,8 @@ import { GameSetupPage } from '@/pages/GameSetupPage';
 import { MatrixEntryPage } from '@/pages/MatrixEntryPage';
 import { PairingPhasePage } from '@/pages/PairingPhasePage';
 import { GameSummaryPage } from '@/pages/GameSummaryPage';
+import { MethodologyPage } from '@/pages/MethodologyPage';
+import { PairingsExplainedPage } from '@/pages/PairingsExplainedPage';
 
 function App() {
   const { updateAvailable } = useVersionCheck();
@@ -22,6 +24,10 @@ function App() {
         {/* Team management */}
         <Route path="/team/new" element={<TeamSetupPage />} />
         <Route path="/team/:id/edit" element={<TeamSetupPage />} />
+
+        {/* Info pages */}
+        <Route path="/pairings-explained" element={<PairingsExplainedPage />} />
+        <Route path="/methodology" element={<MethodologyPage />} />
 
         {/* Game flow */}
         <Route path="/game/new" element={<GameSetupPage />} />
