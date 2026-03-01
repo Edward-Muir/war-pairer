@@ -9,6 +9,7 @@ interface LayoutProps {
   onBack?: () => void;
   rightAction?: React.ReactNode;
   currentPhase?: Phase;
+  hideMenu?: boolean;
 }
 
 export function Layout({
@@ -18,10 +19,17 @@ export function Layout({
   onBack,
   rightAction,
   currentPhase,
+  hideMenu,
 }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header title={title} showBack={showBack} onBack={onBack} rightAction={rightAction} />
+      <Header
+        title={title}
+        showBack={showBack}
+        onBack={onBack}
+        rightAction={rightAction}
+        hideMenu={hideMenu}
+      />
 
       {currentPhase && <PhaseIndicator currentPhase={currentPhase} />}
 

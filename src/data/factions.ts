@@ -72,5 +72,13 @@ export function getAvailableSuperFactions(excludedFactions: string[]): SuperFact
   return SUPER_FACTIONS.map((sf) => ({
     ...sf,
     factions: sf.factions.filter((f) => !excludedSet.has(f.toLowerCase())),
-  })).filter((sf) => sf.factions.length > 0);
+  })).filter((sf) => {
+    if (sf.factions.length === 0) return false;
+    // Space Marines: only one per team, hide entire category if any sub-faction is selected
+    const original = SUPER_FACTIONS.find((s) => s.id === sf.id)!;
+    if (sf.id === 'space-marines' && sf.factions.length < original.factions.length) {
+      return false;
+    }
+    return true;
+  });
 }

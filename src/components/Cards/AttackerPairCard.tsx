@@ -11,6 +11,7 @@ export interface AttackerPairCardProps {
   oppDefender: Player;
   rank: number;
   lockedTotal?: number;
+  totalPairings?: number;
   isRecommended?: boolean;
   selected?: boolean;
   disabled?: boolean;
@@ -31,6 +32,7 @@ export function AttackerPairCard({
   oppDefender,
   rank,
   lockedTotal = 0,
+  totalPairings,
   isRecommended,
   selected = false,
   disabled = false,
@@ -96,7 +98,11 @@ export function AttackerPairCard({
           <div className="flex items-center gap-2">
             {isFullAnalysis(analysis) ? (
               <>
-                <EVBadge value={analysis.totalExpectedValue + lockedTotal} size="sm" />
+                <EVBadge
+                  value={analysis.totalExpectedValue + lockedTotal}
+                  totalPairings={totalPairings}
+                  size="sm"
+                />
                 {/* Immediate score - secondary */}
                 <span className="text-xs text-gray-400">
                   (this: {formatScoreWithDelta(analysis.expectedScore)})

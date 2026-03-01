@@ -110,6 +110,7 @@ export function AdvancedMathSection() {
         <p className="text-sm text-gray-600">
           The recursive structure evaluates the game tree from leaves to root:
         </p>
+        <p className="text-xs font-medium text-gray-500 mb-1">5v5 (UKTC):</p>
         <div className="bg-gray-100 rounded p-2 font-mono text-xs text-gray-800 space-y-1">
           <div>Round 3 (1v1): base case, direct lookup</div>
           <div>Round 2 (3v3): solve 3x3 payoff matrix</div>
@@ -117,11 +118,22 @@ export function AdvancedMathSection() {
           <div>Round 1 (5v5): solve 5x5 payoff matrix</div>
           <div className="ml-4">&rarr; each cell recurses to Round 2</div>
         </div>
+        <p className="text-xs font-medium text-gray-500 mt-2 mb-1">8v8 (WTC):</p>
+        <div className="bg-gray-100 rounded p-2 font-mono text-xs text-gray-800 space-y-1">
+          <div>Round 4 (2v2): base case, 2x2 payoff matrix</div>
+          <div>Round 3 (4v4): solve 4x4 payoff matrix</div>
+          <div className="ml-4">&rarr; each cell recurses to Round 4</div>
+          <div>Round 2 (6v6): solve 6x6 payoff matrix</div>
+          <div className="ml-4">&rarr; each cell recurses to Round 3</div>
+          <div>Round 1 (8v8): solve 8x8 payoff matrix</div>
+          <div className="ml-4">&rarr; each cell recurses to Round 2</div>
+        </div>
       </div>
 
       {/* Complexity */}
       <div className="space-y-1.5">
         <h3 className="text-sm font-semibold text-gray-900">Computational Complexity</h3>
+        <p className="text-xs font-medium text-gray-500 mb-1">5v5 (UKTC):</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -155,8 +167,51 @@ export function AdvancedMathSection() {
           </table>
         </div>
         <p className="text-sm text-gray-600">
-          Total: approximately 1,350 operations &mdash; executes in under a millisecond on any
-          device.
+          ~1,350 operations &mdash; under a millisecond on any device.
+        </p>
+        <p className="text-xs font-medium text-gray-500 mt-3 mb-1">8v8 (WTC):</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                <th className="px-2 py-1.5 text-left">Round</th>
+                <th className="px-2 py-1.5 text-left">Defenders</th>
+                <th className="px-2 py-1.5 text-left">Attacker pairs</th>
+                <th className="px-2 py-1.5 text-left">Recurse to</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-700">
+              <tr>
+                <td className="px-2 py-1.5">1 (8v8)</td>
+                <td className="px-2 py-1.5">8 x 8 = 64</td>
+                <td className="px-2 py-1.5">C(7,2) = 21</td>
+                <td className="px-2 py-1.5">Round 2</td>
+              </tr>
+              <tr>
+                <td className="px-2 py-1.5">2 (6v6)</td>
+                <td className="px-2 py-1.5">6 x 6 = 36</td>
+                <td className="px-2 py-1.5">C(5,2) = 10</td>
+                <td className="px-2 py-1.5">Round 3</td>
+              </tr>
+              <tr>
+                <td className="px-2 py-1.5">3 (4v4)</td>
+                <td className="px-2 py-1.5">4 x 4 = 16</td>
+                <td className="px-2 py-1.5">C(3,2) = 3</td>
+                <td className="px-2 py-1.5">Round 4</td>
+              </tr>
+              <tr>
+                <td className="px-2 py-1.5">4 (2v2)</td>
+                <td className="px-2 py-1.5">2 x 2 = 4</td>
+                <td className="px-2 py-1.5">C(1,2) = 0</td>
+                <td className="px-2 py-1.5">Base case</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-sm text-gray-600">
+          Millions of operations without memoization. With memoization (caching repeated
+          sub-problems), completes in a few seconds on the first analysis and near-instantly on
+          subsequent rounds.
         </p>
       </div>
     </div>

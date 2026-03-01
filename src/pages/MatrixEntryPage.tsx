@@ -26,25 +26,33 @@ export function MatrixEntryPage() {
     }
   }, [id, setActiveGame]);
 
+  const teamSize = game?.ourTeam?.teamSize ?? game?.ourTeam?.players?.length ?? 5;
+
   // Local matrix state (copy from store to allow editing)
   const [matrix, setMatrix] = useState<number[][]>(() => {
-    if (game?.matrix?.length === 5) {
-      return game.matrix.map(row => [...row]); // Deep copy
+    if (game?.matrix?.length === teamSize) {
+      return game.matrix.map((row) => [...row]); // Deep copy
     }
-    return Array(5).fill(null).map(() => Array(5).fill(10));
+    return Array(teamSize)
+      .fill(null)
+      .map(() => Array(teamSize).fill(10));
   });
 
   // Handlers
   const handleScoreChange = (ourIndex: number, oppIndex: number, score: number) => {
-    setMatrix(prev => {
-      const newMatrix = prev.map(row => [...row]);
+    setMatrix((prev) => {
+      const newMatrix = prev.map((row) => [...row]);
       newMatrix[ourIndex][oppIndex] = score;
       return newMatrix;
     });
   };
 
   const handleAllTens = () => {
-    setMatrix(Array(5).fill(null).map(() => Array(5).fill(10)));
+    setMatrix(
+      Array(teamSize)
+        .fill(null)
+        .map(() => Array(teamSize).fill(10))
+    );
   };
 
   const handleStartPairing = () => {
@@ -95,8 +103,8 @@ export function MatrixEntryPage() {
         {/* Instructions */}
         <Card className="mt-4">
           <p className="text-sm text-gray-600">
-            Enter your expected score (0-20) for each matchup.
-            10 = even match. Higher = better for you.
+            Enter your expected score (0-20) for each matchup. 10 = even match. Higher = better for
+            you.
           </p>
         </Card>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Layout } from '@/components/Layout';
@@ -19,14 +19,19 @@ export function GameSetupPage() {
 
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [opponentTeamName, setOpponentTeamName] = useState('');
-  const [opponentPlayers, setOpponentPlayers] = useState<Player[]>(() =>
-    createDefaultPlayers()
-  );
+  const [opponentPlayers, setOpponentPlayers] = useState<Player[]>(() => createDefaultPlayers());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showOurTeam, setShowOurTeam] = useState(false);
 
   // Find selected team for preview
   const selectedTeam = teams.find((t) => t.id === selectedTeamId);
+
+  // Regenerate opponent players when selected team changes (to match team size)
+  useEffect(() => {
+    if (selectedTeam) {
+      setOpponentPlayers(createDefaultPlayers(selectedTeam.teamSize));
+    }
+  }, [selectedTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build team options for select
   const teamOptions = teams.map((team) => ({
@@ -40,9 +45,7 @@ export function GameSetupPage() {
   }
 
   const handlePlayerNameChange = (index: number, name: string) => {
-    setOpponentPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, name } : p))
-    );
+    setOpponentPlayers((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p)));
     if (errors[`player-${index}`]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -53,9 +56,7 @@ export function GameSetupPage() {
   };
 
   const handlePlayerFactionChange = (index: number, faction: string) => {
-    setOpponentPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, faction } : p))
-    );
+    setOpponentPlayers((prev) => prev.map((p, i) => (i === index ? { ...p, faction } : p)));
     if (errors[`faction-${index}`]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -147,9 +148,7 @@ export function GameSetupPage() {
             }}
             placeholder="Choose a team..."
           />
-          {errors.team && (
-            <p className="mt-1 text-sm text-red-600">{errors.team}</p>
-          )}
+          {errors.team && <p className="mt-1 text-sm text-red-600">{errors.team}</p>}
         </div>
 
         {/* Selected Team Preview (Collapsible) */}
@@ -161,9 +160,7 @@ export function GameSetupPage() {
               className="flex w-full items-center justify-between min-h-[44px]"
               aria-expanded={showOurTeam}
             >
-              <h3 className="font-medium text-gray-900">
-                {selectedTeam.teamName}
-              </h3>
+              <h3 className="font-medium text-gray-900">{selectedTeam.teamName}</h3>
               {showOurTeam ? (
                 <ChevronUp className="h-5 w-5 text-gray-500" />
               ) : (
@@ -174,17 +171,12 @@ export function GameSetupPage() {
             {showOurTeam && (
               <div className="mt-3 grid gap-2 border-t pt-3">
                 {selectedTeam.players.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
+                  <div key={player.id} className="flex items-center gap-2 text-sm">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-700">
                       {index + 1}
                     </span>
                     <span className="font-medium text-gray-900">{player.name}</span>
-                    {player.faction && (
-                      <span className="text-gray-500">- {player.faction}</span>
-                    )}
+                    {player.faction && <span className="text-gray-500">- {player.faction}</span>}
                   </div>
                 ))}
               </div>

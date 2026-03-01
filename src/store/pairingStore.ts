@@ -1,12 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type {
-  Phase,
-  Player,
-  Pairing,
-  MatchupMatrix,
-  RoundSelectionState,
-} from './types';
+import type { Phase, Player, Pairing, MatchupMatrix, RoundSelectionState, TeamSize } from './types';
+import { getSelectionRoundCount, generatePhaseOrder } from './types';
 import { useGameStore } from './gameStore';
 
 interface PairingState {
@@ -19,11 +14,13 @@ interface PairingState {
   // Current phase
   phase: Phase;
 
-  // Selection state for pairing rounds 1 and 2
-  round1: RoundSelectionState;
-  round2: RoundSelectionState;
+  // Team size determines number of selection rounds
+  teamSize: TeamSize;
 
-  // Completed pairings (up to 5)
+  // Selection state for each pairing round (length = getSelectionRoundCount(teamSize))
+  rounds: RoundSelectionState[];
+
+  // Completed pairings
   pairings: Pairing[];
 
   // Remaining players after selections
@@ -40,21 +37,16 @@ interface PairingActions {
   setPhase: (phase: Phase) => void;
   advancePhase: () => void;
 
-  // Round 1 selections
-  setOurDefender1: (player: Player) => void;
-  setOppDefender1: (player: Player) => void;
-  setOurAttackers1: (players: [Player, Player]) => void;
-  setOppAttackers1: (players: [Player, Player]) => void;
-
-  // Round 2 selections
-  setOurDefender2: (player: Player) => void;
-  setOppDefender2: (player: Player) => void;
-  setOurAttackers2: (players: [Player, Player]) => void;
-  setOppAttackers2: (players: [Player, Player]) => void;
+  // Round selections (round is 1-indexed)
+  setOurDefender: (round: number, player: Player) => void;
+  setOppDefender: (round: number, player: Player) => void;
+  setOurAttackers: (round: number, players: [Player, Player]) => void;
+  setOppAttackers: (round: number, players: [Player, Player]) => void;
+  getRound: (round: number) => RoundSelectionState;
 
   // Pairing actions
   lockPairing: (pairing: Pairing) => void;
-  choosePairing: (ourPlayer: Player, oppPlayer: Player, round: 1 | 2 | 3) => void;
+  choosePairing: (ourPlayer: Player, oppPlayer: Player, round: number) => void;
   undoLastPairing: () => void;
 
   // Computed helpers
@@ -76,46 +68,33 @@ const initialState: PairingState = {
   gameId: null,
   matrix: null,
   phase: 'home',
-  round1: { ...initialRoundState },
-  round2: { ...initialRoundState },
+  teamSize: 5,
+  rounds: [{ ...initialRoundState }, { ...initialRoundState }],
   pairings: [],
   ourRemaining: [],
   oppRemaining: [],
 };
 
-// Phase transition map for advancePhase
-const phaseOrder: Phase[] = [
-  'home',
-  'team-setup',
-  'game-setup',
-  'matrix-entry',
-  'defender-1-select',
-  'defender-1-reveal',
-  'attacker-1-select',
-  'attacker-1-reveal',
-  'defender-1-choose',
-  'defender-2-select',
-  'defender-2-reveal',
-  'attacker-2-select',
-  'attacker-2-reveal',
-  'defender-2-choose',
-  'final-pairing',
-  'game-summary',
-];
-
 // Helper to rebuild matrix and remaining players from game data
 function rebuildFromGame(
   gameId: string | null,
   pairings: Pairing[]
-): { matrix: MatchupMatrix | null; ourRemaining: Player[]; oppRemaining: Player[] } {
+): {
+  matrix: MatchupMatrix | null;
+  ourRemaining: Player[];
+  oppRemaining: Player[];
+  teamSize: TeamSize;
+} {
   if (!gameId) {
-    return { matrix: null, ourRemaining: [], oppRemaining: [] };
+    return { matrix: null, ourRemaining: [], oppRemaining: [], teamSize: 5 };
   }
 
   const game = useGameStore.getState().getGame(gameId);
   if (!game) {
-    return { matrix: null, ourRemaining: [], oppRemaining: [] };
+    return { matrix: null, ourRemaining: [], oppRemaining: [], teamSize: 5 };
   }
+
+  const teamSize: TeamSize = (game.ourTeam.teamSize ?? 5) as TeamSize;
 
   const matrix: MatchupMatrix = {
     ourTeam: [...game.ourTeam.players],
@@ -127,14 +106,10 @@ function rebuildFromGame(
   const pairedOurIds = new Set(pairings.map((p) => p.ourPlayer.id));
   const pairedOppIds = new Set(pairings.map((p) => p.oppPlayer.id));
 
-  const ourRemaining = game.ourTeam.players.filter(
-    (p) => !pairedOurIds.has(p.id)
-  );
-  const oppRemaining = game.opponentPlayers.filter(
-    (p) => !pairedOppIds.has(p.id)
-  );
+  const ourRemaining = game.ourTeam.players.filter((p) => !pairedOurIds.has(p.id));
+  const oppRemaining = game.opponentPlayers.filter((p) => !pairedOppIds.has(p.id));
 
-  return { matrix, ourRemaining, oppRemaining };
+  return { matrix, ourRemaining, oppRemaining, teamSize };
 }
 
 export const usePairingStore = create<PairingStore>()(
@@ -148,6 +123,9 @@ export const usePairingStore = create<PairingStore>()(
         const game = useGameStore.getState().getGame(gameId);
         if (!game) return false;
 
+        const teamSize: TeamSize = (game.ourTeam.teamSize ?? 5) as TeamSize;
+        const roundCount = getSelectionRoundCount(teamSize);
+
         const matrix: MatchupMatrix = {
           ourTeam: [...game.ourTeam.players],
           oppTeam: [...game.opponentPlayers],
@@ -158,8 +136,8 @@ export const usePairingStore = create<PairingStore>()(
           gameId,
           matrix,
           phase: 'matrix-entry',
-          round1: { ...initialRoundState },
-          round2: { ...initialRoundState },
+          teamSize,
+          rounds: Array.from({ length: roundCount }, () => ({ ...initialRoundState })),
           pairings: [],
           ourRemaining: [...game.ourTeam.players],
           oppRemaining: [...game.opponentPlayers],
@@ -177,72 +155,63 @@ export const usePairingStore = create<PairingStore>()(
       },
 
       advancePhase: () => {
-        const { phase } = get();
-        const currentIndex = phaseOrder.indexOf(phase);
-        if (currentIndex < phaseOrder.length - 1) {
-          set({ phase: phaseOrder[currentIndex + 1] });
+        const { phase, teamSize } = get();
+        const order = generatePhaseOrder(teamSize);
+        const currentIndex = order.indexOf(phase);
+        if (currentIndex < order.length - 1) {
+          set({ phase: order[currentIndex + 1] });
         }
       },
 
-      // Round 1 selections
-      setOurDefender1: (player) => {
-        set((state) => ({
-          round1: { ...state.round1, ourDefender: player },
-        }));
+      // Generic round setters (round is 1-indexed)
+      setOurDefender: (round, player) => {
+        set((state) => {
+          const rounds = [...state.rounds];
+          rounds[round - 1] = { ...rounds[round - 1], ourDefender: player };
+          return { rounds };
+        });
       },
 
-      setOppDefender1: (player) => {
-        set((state) => ({
-          round1: { ...state.round1, oppDefender: player },
-        }));
+      setOppDefender: (round, player) => {
+        set((state) => {
+          const rounds = [...state.rounds];
+          rounds[round - 1] = { ...rounds[round - 1], oppDefender: player };
+          return { rounds };
+        });
       },
 
-      setOurAttackers1: (players) => {
-        set((state) => ({
-          round1: { ...state.round1, ourAttackers: players },
-        }));
+      setOurAttackers: (round, players) => {
+        set((state) => {
+          const rounds = [...state.rounds];
+          rounds[round - 1] = { ...rounds[round - 1], ourAttackers: players };
+          return { rounds };
+        });
       },
 
-      setOppAttackers1: (players) => {
-        set((state) => ({
-          round1: { ...state.round1, oppAttackers: players },
-        }));
+      setOppAttackers: (round, players) => {
+        set((state) => {
+          const rounds = [...state.rounds];
+          rounds[round - 1] = { ...rounds[round - 1], oppAttackers: players };
+          return { rounds };
+        });
       },
 
-      // Round 2 selections
-      setOurDefender2: (player) => {
-        set((state) => ({
-          round2: { ...state.round2, ourDefender: player },
-        }));
-      },
-
-      setOppDefender2: (player) => {
-        set((state) => ({
-          round2: { ...state.round2, oppDefender: player },
-        }));
-      },
-
-      setOurAttackers2: (players) => {
-        set((state) => ({
-          round2: { ...state.round2, ourAttackers: players },
-        }));
-      },
-
-      setOppAttackers2: (players) => {
-        set((state) => ({
-          round2: { ...state.round2, oppAttackers: players },
-        }));
+      getRound: (round) => {
+        return (
+          get().rounds[round - 1] ?? {
+            ourDefender: null,
+            oppDefender: null,
+            ourAttackers: null,
+            oppAttackers: null,
+          }
+        );
       },
 
       // Pairing actions
       lockPairing: (pairing) => {
         set((state) => {
-          const ourRemaining = state.ourRemaining.filter(
-            (p) => p.id !== pairing.ourPlayer.id
-          );
-          const oppRemaining = state.oppRemaining.filter(
-            (p) => p.id !== pairing.oppPlayer.id
-          );
+          const ourRemaining = state.ourRemaining.filter((p) => p.id !== pairing.ourPlayer.id);
+          const oppRemaining = state.oppRemaining.filter((p) => p.id !== pairing.oppPlayer.id);
           return {
             pairings: [...state.pairings, pairing],
             ourRemaining,
@@ -291,24 +260,40 @@ export const usePairingStore = create<PairingStore>()(
     {
       name: 'uktc-current-pairing',
       storage: createJSONStorage(() => localStorage),
+      version: 2,
+      migrate: (persisted, version) => {
+        if (version < 2) {
+          const old = persisted as Record<string, unknown>;
+          return {
+            ...old,
+            teamSize: 5,
+            rounds: [
+              old.round1 ?? { ...initialRoundState },
+              old.round2 ?? { ...initialRoundState },
+            ],
+          };
+        }
+        return persisted as PairingState & PairingActions;
+      },
       // Only persist essential state, not derived values
       partialize: (state) => ({
         gameId: state.gameId,
         phase: state.phase,
-        round1: state.round1,
-        round2: state.round2,
+        teamSize: state.teamSize,
+        rounds: state.rounds,
         pairings: state.pairings,
       }),
       // Rebuild matrix and remaining players from game data after rehydration
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const { matrix, ourRemaining, oppRemaining } = rebuildFromGame(
+          const { matrix, ourRemaining, oppRemaining, teamSize } = rebuildFromGame(
             state.gameId,
             state.pairings
           );
           state.matrix = matrix;
           state.ourRemaining = ourRemaining;
           state.oppRemaining = oppRemaining;
+          state.teamSize = teamSize;
         }
       },
     }

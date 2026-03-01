@@ -12,7 +12,7 @@ import type { Phase } from '@/store/types';
 import type { FullAttackerAnalysis } from '@/algorithms/fullGameTheory';
 
 interface AttackerSelectContentProps {
-  round: 1 | 2;
+  round: number;
   onNext: (phase: Phase) => void;
 }
 
@@ -20,8 +20,7 @@ export function AttackerSelectContent({ round, onNext }: AttackerSelectContentPr
   const reducedMotion = useReducedMotion();
   const { haptics } = useHaptic();
   const lockedTotal = useLockedTotal();
-  const { matrix, ourRemaining, round1, round2, setOurAttackers1, setOurAttackers2 } =
-    usePairingStore();
+  const { matrix, ourRemaining, teamSize, getRound, setOurAttackers } = usePairingStore();
 
   const [selectedPair, setSelectedPair] = useState<FullAttackerAnalysis | null>(null);
 
@@ -30,8 +29,9 @@ export function AttackerSelectContent({ round, onNext }: AttackerSelectContentPr
     setSelectedPair(analysis);
   };
 
-  const ourDefender = round === 1 ? round1.ourDefender : round2.ourDefender;
-  const oppDefender = round === 1 ? round1.oppDefender : round2.oppDefender;
+  const roundState = getRound(round);
+  const ourDefender = roundState.ourDefender;
+  const oppDefender = roundState.oppDefender;
 
   // Get available attackers (our remaining players minus our defender)
   const availableAttackers = ourRemaining.filter((p) => p.id !== ourDefender?.id);
@@ -80,13 +80,8 @@ export function AttackerSelectContent({ round, onNext }: AttackerSelectContentPr
 
     if (!attacker1 || !attacker2) return;
 
-    if (round === 1) {
-      setOurAttackers1([attacker1, attacker2]);
-      onNext('attacker-1-reveal');
-    } else {
-      setOurAttackers2([attacker1, attacker2]);
-      onNext('attacker-2-reveal');
-    }
+    setOurAttackers(round, [attacker1, attacker2]);
+    onNext(`attacker-${round}-reveal` as Phase);
   };
 
   return (
@@ -144,6 +139,7 @@ export function AttackerSelectContent({ round, onNext }: AttackerSelectContentPr
                 oppDefender={oppDefender}
                 rank={idx + 1}
                 lockedTotal={lockedTotal}
+                totalPairings={teamSize}
                 selected={
                   selectedPair?.attackers[0] === analysis.attackers[0] &&
                   selectedPair?.attackers[1] === analysis.attackers[1]

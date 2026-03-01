@@ -19,7 +19,7 @@ interface ActiveCell {
 }
 
 /**
- * 5x5 matchup matrix grid with sticky headers for mobile scrolling.
+ * NxN matchup matrix grid with sticky headers for mobile scrolling.
  * Each cell displays the expected score for our player (row) vs opponent (column).
  * Tap a cell to open a compact score picker popover.
  */
@@ -71,9 +71,7 @@ export function MatrixGrid({
           <thead>
             <tr>
               {/* Corner cell */}
-              <th
-                className="sticky top-0 left-0 z-30 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-500 border-b border-r border-gray-200 h-[100px] align-bottom"
-              >
+              <th className="sticky top-0 left-0 z-30 bg-gray-50 px-2 py-2 text-xs font-medium text-gray-500 border-b border-r border-gray-200 h-[100px] align-bottom">
                 <span className="block pb-1">vs</span>
               </th>
               {/* Opponent column headers (rotated 90 degrees, faction highlighted) */}
@@ -122,10 +120,7 @@ export function MatrixGrid({
                 </td>
                 {/* Score cells */}
                 {oppTeam.map((oppPlayer, oppIndex) => (
-                  <td
-                    key={oppPlayer.id}
-                    className="p-1 border-b border-gray-100"
-                  >
+                  <td key={oppPlayer.id} className="p-1 border-b border-gray-100">
                     <ScorePickerCell
                       value={scores[ourIndex]?.[oppIndex] ?? 10}
                       onTap={() => handleCellTap(ourIndex, oppIndex)}
@@ -144,7 +139,7 @@ export function MatrixGrid({
       {/* Shared score picker popover */}
       <ScorePickerPopover
         isOpen={activeCell !== null}
-        value={activeCell ? scores[activeCell.ourIndex]?.[activeCell.oppIndex] ?? 10 : 10}
+        value={activeCell ? (scores[activeCell.ourIndex]?.[activeCell.oppIndex] ?? 10) : 10}
         ourFaction={activeCell ? ourTeam[activeCell.ourIndex]?.faction : undefined}
         oppFaction={activeCell ? oppTeam[activeCell.oppIndex]?.faction : undefined}
         onSelect={handleCellSelect}
@@ -159,7 +154,7 @@ export function MatrixGrid({
           ourPlayer={ourTeam[editingRow]}
           ourIndex={editingRow}
           oppTeam={oppTeam}
-          scores={scores[editingRow] ?? [10, 10, 10, 10, 10]}
+          scores={scores[editingRow] ?? Array(oppTeam.length).fill(10)}
           onScoreChange={handleRowScoreChange}
         />
       )}

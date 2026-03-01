@@ -11,6 +11,7 @@ export interface DefenderCardProps {
   opponentPlayers: Player[];
   rank: number;
   lockedTotal?: number;
+  totalPairings?: number;
   isRecommended?: boolean;
   selected?: boolean;
   disabled?: boolean;
@@ -31,6 +32,7 @@ export function DefenderCard({
   opponentPlayers,
   rank,
   lockedTotal = 0,
+  totalPairings,
   isRecommended,
   selected = false,
   disabled = false,
@@ -76,7 +78,11 @@ export function DefenderCard({
           <div className="flex shrink-0 flex-col items-end gap-1">
             {/* Game Value (full tree) - shown prominently if available */}
             {isFullAnalysis(analysis) && (
-              <EVBadge value={analysis.gameValue + lockedTotal} size="lg" />
+              <EVBadge
+                value={analysis.gameValue + lockedTotal}
+                totalPairings={totalPairings}
+                size="lg"
+              />
             )}
             {/* Defender Score (simple metric) */}
             <div
