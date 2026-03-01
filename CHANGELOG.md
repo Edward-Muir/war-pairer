@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.0](https://github.com/Edward-Muir/war-pairer/compare/v0.1.4...v0.2.0) (2026-03-01)
+
+
+### Features
+
+* Allow players to set default values for pairings ([0e27a69](https://github.com/Edward-Muir/war-pairer/commit/0e27a6924615968872b53ee517aa861db2bf9677))
+
 ## [0.1.4](https://github.com/Edward-Muir/war-pairer/compare/v0.1.3...v0.1.4) (2026-02-28)
 
 
