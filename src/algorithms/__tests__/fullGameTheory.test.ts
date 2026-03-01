@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   analyzeDefenderPhase,
   analyzeAttackerPhase,
@@ -7,7 +7,9 @@ import {
   solveZeroSumGame,
   getOpponentMatrix,
   evaluateDefenderChoices,
-} from '../fullGameTheory'
+  initMemoCache,
+  clearMemoCache,
+} from '../fullGameTheory';
 
 // Test matrix from the algorithm document
 const testMatrix = [
@@ -16,62 +18,65 @@ const testMatrix = [
   [7, 12, 10, 8, 16], // Player 2
   [11, 6, 13, 10, 9], // Player 3
   [9, 15, 7, 14, 10], // Player 4
-]
+];
 
 describe('fullGameTheory', () => {
+  beforeEach(() => initMemoCache());
+  afterEach(() => clearMemoCache());
+
   describe('analyzeDefenderPhase', () => {
     it('should return analysis for all available defenders', () => {
-      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
-      expect(result.defenderAnalyses).toHaveLength(5)
-      expect(result.gameValue).toBeDefined()
-      expect(result.payoffMatrix).toHaveLength(5)
-      expect(result.payoffMatrix[0]).toHaveLength(5)
-    })
+      expect(result.defenderAnalyses).toHaveLength(5);
+      expect(result.gameValue).toBeDefined();
+      expect(result.payoffMatrix).toHaveLength(5);
+      expect(result.payoffMatrix[0]).toHaveLength(5);
+    });
 
     it('should include both defenderScore and gameValue for each player', () => {
-      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       result.defenderAnalyses.forEach((analysis) => {
-        expect(analysis.defenderScore).toBeDefined()
-        expect(analysis.gameValue).toBeDefined()
-        expect(analysis.worstMatchups).toHaveLength(2)
-        expect(typeof analysis.isOptimal).toBe('boolean')
-      })
-    })
+        expect(analysis.defenderScore).toBeDefined();
+        expect(analysis.gameValue).toBeDefined();
+        expect(analysis.worstMatchups).toHaveLength(2);
+        expect(typeof analysis.isOptimal).toBe('boolean');
+      });
+    });
 
     it('should sort defenders by gameValue descending', () => {
-      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       for (let i = 1; i < result.defenderAnalyses.length; i++) {
         expect(result.defenderAnalyses[i - 1].gameValue).toBeGreaterThanOrEqual(
           result.defenderAnalyses[i].gameValue
-        )
+        );
       }
-    })
+    });
 
     it('should mark at least one defender as optimal', () => {
-      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const result = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
-      const optimalCount = result.defenderAnalyses.filter((a) => a.isOptimal).length
-      expect(optimalCount).toBeGreaterThanOrEqual(1)
-    })
+      const optimalCount = result.defenderAnalyses.filter((a) => a.isOptimal).length;
+      expect(optimalCount).toBeGreaterThanOrEqual(1);
+    });
 
     it('should work with 3 players (round 2 scenario)', () => {
-      const result = analyzeDefenderPhase(testMatrix, [1, 2, 4], [0, 2, 3])
+      const result = analyzeDefenderPhase(testMatrix, [1, 2, 4], [0, 2, 3]);
 
-      expect(result.defenderAnalyses).toHaveLength(3)
-      expect(result.payoffMatrix).toHaveLength(3)
-      expect(result.payoffMatrix[0]).toHaveLength(3)
-    })
+      expect(result.defenderAnalyses).toHaveLength(3);
+      expect(result.payoffMatrix).toHaveLength(3);
+      expect(result.payoffMatrix[0]).toHaveLength(3);
+    });
 
     it('should work with 1 player each (round 3 scenario)', () => {
-      const result = analyzeDefenderPhase(testMatrix, [2], [3])
+      const result = analyzeDefenderPhase(testMatrix, [2], [3]);
 
-      expect(result.defenderAnalyses).toHaveLength(1)
-      expect(result.gameValue).toBe(testMatrix[2][3]) // Direct matchup
-    })
-  })
+      expect(result.defenderAnalyses).toHaveLength(1);
+      expect(result.gameValue).toBe(testMatrix[2][3]); // Direct matchup
+    });
+  });
 
   describe('analyzeAttackerPhase', () => {
     it('should return analysis for all possible attacker pairs', () => {
@@ -82,32 +87,32 @@ describe('fullGameTheory', () => {
         1, // oppDefender
         [1, 2, 3, 4], // our available attackers
         [0, 2, 3, 4] // opp available (excluding their defender)
-      )
+      );
 
-      expect(result).toHaveLength(6)
-    })
+      expect(result).toHaveLength(6);
+    });
 
     it('should include totalExpectedValue for each pair', () => {
-      const result = analyzeAttackerPhase(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4])
+      const result = analyzeAttackerPhase(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4]);
 
       result.forEach((analysis) => {
-        expect(analysis.expectedScore).toBeDefined()
-        expect(analysis.totalExpectedValue).toBeDefined()
-        expect(analysis.forcedMatchup).toBeDefined()
-        expect(analysis.refusedAttacker).toBeDefined()
-        expect(typeof analysis.isOptimal).toBe('boolean')
-      })
-    })
+        expect(analysis.expectedScore).toBeDefined();
+        expect(analysis.totalExpectedValue).toBeDefined();
+        expect(analysis.forcedMatchup).toBeDefined();
+        expect(analysis.refusedAttacker).toBeDefined();
+        expect(typeof analysis.isOptimal).toBe('boolean');
+      });
+    });
 
     it('should sort by totalExpectedValue descending', () => {
-      const result = analyzeAttackerPhase(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4])
+      const result = analyzeAttackerPhase(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4]);
 
       for (let i = 1; i < result.length; i++) {
         expect(result[i - 1].totalExpectedValue).toBeGreaterThanOrEqual(
           result[i].totalExpectedValue
-        )
+        );
       }
-    })
+    });
 
     it('should return 1 pair when only 2 attackers available (round 2)', () => {
       const result = analyzeAttackerPhase(
@@ -116,56 +121,56 @@ describe('fullGameTheory', () => {
         2, // oppDefender
         [3, 4], // only 2 available
         [0, 1] // opp available
-      )
+      );
 
-      expect(result).toHaveLength(1)
-      expect(result[0].attackers).toEqual([3, 4])
-    })
+      expect(result).toHaveLength(1);
+      expect(result[0].attackers).toEqual([3, 4]);
+    });
 
     it('should correctly identify forcedMatchup (the one opponent will choose)', () => {
-      const result = analyzeAttackerPhase(testMatrix, 0, 1, [2, 3], [0, 2])
+      const result = analyzeAttackerPhase(testMatrix, 0, 1, [2, 3], [0, 2]);
 
       // Opponent will choose the attacker with lower score against them
-      const pair = result[0]
-      const score1 = testMatrix[pair.attackers[0]][1]
-      const score2 = testMatrix[pair.attackers[1]][1]
+      const pair = result[0];
+      const score1 = testMatrix[pair.attackers[0]][1];
+      const score2 = testMatrix[pair.attackers[1]][1];
 
       if (score1 <= score2) {
-        expect(pair.forcedMatchup).toBe(pair.attackers[0])
+        expect(pair.forcedMatchup).toBe(pair.attackers[0]);
       } else {
-        expect(pair.forcedMatchup).toBe(pair.attackers[1])
+        expect(pair.forcedMatchup).toBe(pair.attackers[1]);
       }
-    })
-  })
+    });
+  });
 
   describe('buildDefenderPayoffMatrix', () => {
     it('should build NxN matrix for N players', () => {
-      const payoff = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const payoff = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
-      expect(payoff).toHaveLength(5)
+      expect(payoff).toHaveLength(5);
       payoff.forEach((row) => {
-        expect(row).toHaveLength(5)
-      })
-    })
+        expect(row).toHaveLength(5);
+      });
+    });
 
     it('should have symmetric-ish values around 50 (zero-sum property)', () => {
-      const payoff = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const payoff = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // Total score across 5 games should be 100 for both teams combined
       // So our expected value should hover around 50 for balanced matchups
       const avgPayoff =
-        payoff.flat().reduce((a, b) => a + b, 0) / (payoff.length * payoff[0].length)
-      expect(avgPayoff).toBeGreaterThan(40)
-      expect(avgPayoff).toBeLessThan(60)
-    })
+        payoff.flat().reduce((a, b) => a + b, 0) / (payoff.length * payoff[0].length);
+      expect(avgPayoff).toBeGreaterThan(40);
+      expect(avgPayoff).toBeLessThan(60);
+    });
 
     it('should produce consistent results for same inputs', () => {
-      const payoff1 = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2], [1, 2, 3])
-      const payoff2 = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2], [1, 2, 3])
+      const payoff1 = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2], [1, 2, 3]);
+      const payoff2 = buildDefenderPayoffMatrix(testMatrix, [0, 1, 2], [1, 2, 3]);
 
-      expect(payoff1).toEqual(payoff2)
-    })
-  })
+      expect(payoff1).toEqual(payoff2);
+    });
+  });
 
   describe('resolveAttackerExchange', () => {
     it('should return scores and pairings for a defender matchup', () => {
@@ -175,42 +180,42 @@ describe('fullGameTheory', () => {
         1, // oppDefender
         [1, 2, 3, 4], // our attackers
         [0, 2, 3, 4] // opp attackers
-      )
+      );
 
-      expect(result.ourDefenderScore).toBeDefined()
-      expect(result.ourAttackerScore).toBeDefined()
-      expect(result.totalScore).toBe(result.ourDefenderScore + result.ourAttackerScore)
-      expect(result.ourPairedPlayers).toHaveLength(2)
-      expect(result.oppPairedPlayers).toHaveLength(2)
-    })
+      expect(result.ourDefenderScore).toBeDefined();
+      expect(result.ourAttackerScore).toBeDefined();
+      expect(result.totalScore).toBe(result.ourDefenderScore + result.ourAttackerScore);
+      expect(result.ourPairedPlayers).toHaveLength(2);
+      expect(result.oppPairedPlayers).toHaveLength(2);
+    });
 
     it('should pair our defender with an opponent attacker', () => {
-      const result = resolveAttackerExchange(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4])
+      const result = resolveAttackerExchange(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4]);
 
       // Our defender should be in our paired players
-      expect(result.ourPairedPlayers).toContain(0)
+      expect(result.ourPairedPlayers).toContain(0);
       // Opp paired players includes their defender (1) and one of our attackers who got chosen
       // The oppPairedPlayers[0] should be an opponent attacker (one of [0,2,3,4])
       // The oppPairedPlayers[1] is their defender which we attack
-      expect(result.oppPairedPlayers).toHaveLength(2)
+      expect(result.oppPairedPlayers).toHaveLength(2);
       // One should be from the opponent attackers (excluding their defender 1)
-      expect([0, 2, 3, 4]).toContain(result.oppPairedPlayers[0])
+      expect([0, 2, 3, 4]).toContain(result.oppPairedPlayers[0]);
       // The other is their defender
-      expect(result.oppPairedPlayers).toContain(1)
-    })
+      expect(result.oppPairedPlayers).toContain(1);
+    });
 
     it('should give us optimal defender choice (max of 2 attackers sent)', () => {
-      const result = resolveAttackerExchange(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4])
+      const result = resolveAttackerExchange(testMatrix, 0, 1, [1, 2, 3, 4], [0, 2, 3, 4]);
 
       // Opponent sends worst 2 attackers against our defender 0
       // Those would be players that give us lowest scores
       // We get to choose the better of those 2
-      const possibleScores = [0, 2, 3, 4].map((opp) => testMatrix[0][opp])
-      const sortedScores = [...possibleScores].sort((a, b) => a - b)
+      const possibleScores = [0, 2, 3, 4].map((opp) => testMatrix[0][opp]);
+      const sortedScores = [...possibleScores].sort((a, b) => a - b);
       // Second lowest is our defender score (we pick the better of 2 worst)
-      expect(result.ourDefenderScore).toBe(sortedScores[1])
-    })
-  })
+      expect(result.ourDefenderScore).toBe(sortedScores[1]);
+    });
+  });
 
   describe('solveZeroSumGame', () => {
     it('should find saddle point when one exists', () => {
@@ -219,15 +224,15 @@ describe('fullGameTheory', () => {
         [3, 5, 7],
         [2, 4, 6],
         [1, 3, 5],
-      ]
+      ];
 
-      const result = solveZeroSumGame(matrixWithSaddle, [0, 1, 2], [0, 1, 2])
+      const result = solveZeroSumGame(matrixWithSaddle, [0, 1, 2], [0, 1, 2]);
 
       // The saddle point should be at (0, 0) with value 3
       // Row 0 min is 3, and column 0 max is also 3
-      expect(result.isPure).toBe(true)
-      expect(result.value).toBe(3)
-    })
+      expect(result.isPure).toBe(true);
+      expect(result.value).toBe(3);
+    });
 
     it('should return maximin value when no saddle point exists', () => {
       // Rock-paper-scissors style matrix (no pure equilibrium)
@@ -235,76 +240,72 @@ describe('fullGameTheory', () => {
         [0, -1, 1],
         [1, 0, -1],
         [-1, 1, 0],
-      ]
+      ];
 
-      const result = solveZeroSumGame(rpsMatrix, [0, 1, 2], [0, 1, 2])
+      const result = solveZeroSumGame(rpsMatrix, [0, 1, 2], [0, 1, 2]);
 
       // Maximin for this matrix should be -1 (each row's min is -1)
-      expect(result.value).toBe(-1)
-    })
+      expect(result.value).toBe(-1);
+    });
 
     it('should handle 1x1 matrix', () => {
-      const result = solveZeroSumGame([[10]], [0], [0])
+      const result = solveZeroSumGame([[10]], [0], [0]);
 
-      expect(result.value).toBe(10)
-      expect(result.isPure).toBe(true)
-    })
+      expect(result.value).toBe(10);
+      expect(result.isPure).toBe(true);
+    });
 
     it('should handle empty matrix', () => {
-      const result = solveZeroSumGame([], [], [])
+      const result = solveZeroSumGame([], [], []);
 
-      expect(result.value).toBe(0)
-    })
-  })
+      expect(result.value).toBe(0);
+    });
+  });
 
   describe('getOpponentMatrix', () => {
     it('should transpose and invert scores', () => {
       const ourMatrix = [
         [10, 8],
         [6, 14],
-      ]
+      ];
 
-      const oppMatrix = getOpponentMatrix(ourMatrix)
+      const oppMatrix = getOpponentMatrix(ourMatrix);
 
       // oppMatrix[j][i] = 20 - ourMatrix[i][j]
-      expect(oppMatrix[0][0]).toBe(20 - 10) // = 10
-      expect(oppMatrix[0][1]).toBe(20 - 6) // = 14
-      expect(oppMatrix[1][0]).toBe(20 - 8) // = 12
-      expect(oppMatrix[1][1]).toBe(20 - 14) // = 6
-    })
+      expect(oppMatrix[0][0]).toBe(20 - 10); // = 10
+      expect(oppMatrix[0][1]).toBe(20 - 6); // = 14
+      expect(oppMatrix[1][0]).toBe(20 - 8); // = 12
+      expect(oppMatrix[1][1]).toBe(20 - 14); // = 6
+    });
 
     it('should be inverse of our matrix (zero-sum property)', () => {
-      const oppMatrix = getOpponentMatrix(testMatrix)
+      const oppMatrix = getOpponentMatrix(testMatrix);
 
       // For any matchup, our score + their score = 20
       for (let i = 0; i < testMatrix.length; i++) {
         for (let j = 0; j < testMatrix[i].length; j++) {
-          expect(testMatrix[i][j] + oppMatrix[j][i]).toBe(20)
+          expect(testMatrix[i][j] + oppMatrix[j][i]).toBe(20);
         }
       }
-    })
-  })
+    });
+  });
 
   describe('integration: full game analysis', () => {
     it('should provide consistent recommendations across phases', () => {
       // Round 1: Get defender recommendation
-      const defenderResult = analyzeDefenderPhase(
-        testMatrix,
-        [0, 1, 2, 3, 4],
-        [0, 1, 2, 3, 4]
-      )
+      const defenderResult = analyzeDefenderPhase(testMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // Pick the optimal defender
-      const optimalDefender = defenderResult.defenderAnalyses.find((a) => a.isOptimal)
-      expect(optimalDefender).toBeDefined()
+      const optimalDefender = defenderResult.defenderAnalyses.find((a) => a.isOptimal);
+      expect(optimalDefender).toBeDefined();
 
       // Simulate: both teams picked defenders
-      const ourDefender = optimalDefender!.playerIndex
-      const oppDefender = 2 // Arbitrary opponent choice
+      const ourDefender = optimalDefender!.playerIndex;
+      const oppDefender = 2; // Arbitrary opponent choice
 
       // Get attacker recommendations
-      const ourAttackers = [0, 1, 2, 3, 4].filter((p) => p !== ourDefender)
-      const oppAttackers = [0, 1, 2, 3, 4].filter((p) => p !== oppDefender)
+      const ourAttackers = [0, 1, 2, 3, 4].filter((p) => p !== ourDefender);
+      const oppAttackers = [0, 1, 2, 3, 4].filter((p) => p !== oppDefender);
 
       const attackerResult = analyzeAttackerPhase(
         testMatrix,
@@ -312,27 +313,23 @@ describe('fullGameTheory', () => {
         oppDefender,
         ourAttackers,
         oppAttackers
-      )
+      );
 
-      expect(attackerResult.length).toBeGreaterThan(0)
-      expect(attackerResult[0].isOptimal).toBe(true)
-    })
+      expect(attackerResult.length).toBeGreaterThan(0);
+      expect(attackerResult[0].isOptimal).toBe(true);
+    });
 
     it('should compute reasonable game values for balanced matrix', () => {
       // Create a perfectly balanced matrix (all 10s)
       const balancedMatrix = Array(5)
         .fill(null)
-        .map(() => Array(5).fill(10))
+        .map(() => Array(5).fill(10));
 
-      const result = analyzeDefenderPhase(
-        balancedMatrix,
-        [0, 1, 2, 3, 4],
-        [0, 1, 2, 3, 4]
-      )
+      const result = analyzeDefenderPhase(balancedMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // With all matchups at 10, total expected should be 50 (5 games × 10)
-      expect(result.gameValue).toBe(50)
-    })
+      expect(result.gameValue).toBe(50);
+    });
 
     it('should give higher game values for favorable matchups', () => {
       // Create a matrix where player 0 is very strong
@@ -342,42 +339,38 @@ describe('fullGameTheory', () => {
         [10, 10, 10, 10, 10],
         [10, 10, 10, 10, 10],
         [10, 10, 10, 10, 10],
-      ]
+      ];
 
-      const result = analyzeDefenderPhase(
-        strongP0Matrix,
-        [0, 1, 2, 3, 4],
-        [0, 1, 2, 3, 4]
-      )
+      const result = analyzeDefenderPhase(strongP0Matrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // Game value should be above 50 since we have a strong player
-      expect(result.gameValue).toBeGreaterThan(50)
-    })
-  })
+      expect(result.gameValue).toBeGreaterThan(50);
+    });
+  });
 
   describe('edge cases', () => {
     it('should handle round 2 with 3 players', () => {
-      const result = analyzeDefenderPhase(testMatrix, [0, 2, 4], [1, 2, 3])
+      const result = analyzeDefenderPhase(testMatrix, [0, 2, 4], [1, 2, 3]);
 
-      expect(result.defenderAnalyses).toHaveLength(3)
-      expect(result.equilibrium).toBeDefined()
-    })
+      expect(result.defenderAnalyses).toHaveLength(3);
+      expect(result.equilibrium).toBeDefined();
+    });
 
     it('should handle forced final pairing (1 player each)', () => {
-      const result = analyzeDefenderPhase(testMatrix, [3], [4])
+      const result = analyzeDefenderPhase(testMatrix, [3], [4]);
 
-      expect(result.defenderAnalyses).toHaveLength(1)
-      expect(result.gameValue).toBe(testMatrix[3][4])
-    })
+      expect(result.defenderAnalyses).toHaveLength(1);
+      expect(result.gameValue).toBe(testMatrix[3][4]);
+    });
 
     it('should handle attacker phase with only 2 attackers', () => {
-      const result = analyzeAttackerPhase(testMatrix, 0, 1, [2, 3], [2, 4])
+      const result = analyzeAttackerPhase(testMatrix, 0, 1, [2, 3], [2, 4]);
 
-      expect(result).toHaveLength(1)
-      expect(result[0].attackers).toContain(2)
-      expect(result[0].attackers).toContain(3)
-    })
-  })
+      expect(result).toHaveLength(1);
+      expect(result[0].attackers).toContain(2);
+      expect(result[0].attackers).toContain(3);
+    });
+  });
 
   describe('obvious dominance cases', () => {
     it('should recommend dominant defender over weak defenders', () => {
@@ -389,18 +382,14 @@ describe('fullGameTheory', () => {
         [10, 10, 10, 10, 10], // Player 2
         [10, 10, 10, 10, 10], // Player 3
         [10, 10, 10, 10, 10], // Player 4
-      ]
+      ];
 
-      const result = analyzeDefenderPhase(
-        dominantDefenderMatrix,
-        [0, 1, 2, 3, 4],
-        [0, 1, 2, 3, 4]
-      )
+      const result = analyzeDefenderPhase(dominantDefenderMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // Player 0 should be the optimal defender (first in sorted list)
-      expect(result.defenderAnalyses[0].playerIndex).toBe(0)
-      expect(result.defenderAnalyses[0].isOptimal).toBe(true)
-    })
+      expect(result.defenderAnalyses[0].playerIndex).toBe(0);
+      expect(result.defenderAnalyses[0].isOptimal).toBe(true);
+    });
 
     it('should avoid dominated defender who scores poorly', () => {
       // Player 4 scores 0 against everyone - extremely dominated as defender
@@ -412,23 +401,23 @@ describe('fullGameTheory', () => {
         [10, 10, 10, 10, 10], // Player 2
         [10, 10, 10, 10, 10], // Player 3
         [0, 0, 0, 0, 0], // Player 4 - scores 0 vs everyone (useless)
-      ]
+      ];
 
       const result = analyzeDefenderPhase(
         dominatedDefenderMatrix,
         [0, 1, 2, 3, 4],
         [0, 1, 2, 3, 4]
-      )
+      );
 
       // Find player 4's analysis
-      const player4Analysis = result.defenderAnalyses.find((a) => a.playerIndex === 4)!
+      const player4Analysis = result.defenderAnalyses.find((a) => a.playerIndex === 4)!;
 
       // Player 4 should NOT be optimal (scores 0 as defender)
-      expect(player4Analysis.isOptimal).toBe(false)
+      expect(player4Analysis.isOptimal).toBe(false);
 
       // Player 4's defenderScore should be 0 (scores 0 against everyone)
-      expect(player4Analysis.defenderScore).toBe(0)
-    })
+      expect(player4Analysis.defenderScore).toBe(0);
+    });
 
     it('should find clear saddle point in simple matrix', () => {
       // Matrix designed so that defender 0 vs opponent 0 is a saddle point
@@ -440,14 +429,14 @@ describe('fullGameTheory', () => {
         [7, 10, 12, 11, 9], // Row min = 7
         [4, 7, 9, 8, 6], // Row min = 4
         // Col max: 8, 10, 12, 11, 9
-      ]
+      ];
 
-      const result = solveZeroSumGame(saddlePointMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4])
+      const result = solveZeroSumGame(saddlePointMatrix, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
 
       // Saddle point at (0, 0) with value 8
-      expect(result.isPure).toBe(true)
-      expect(result.value).toBe(8)
-    })
+      expect(result.isPure).toBe(true);
+      expect(result.value).toBe(8);
+    });
 
     it('should prefer attacker pair with higher minimum score', () => {
       // Create a matrix where one pair clearly dominates
@@ -461,7 +450,7 @@ describe('fullGameTheory', () => {
         [10, 15, 10, 10, 10], // Player 2 - scores 15 vs opp defender
         [10, 14, 10, 10, 10], // Player 3 - scores 14 vs opp defender
         [10, 8, 10, 10, 10], // Player 4 - scores 8 vs opp defender
-      ]
+      ];
 
       const result = analyzeAttackerPhase(
         attackerMatrix,
@@ -469,15 +458,15 @@ describe('fullGameTheory', () => {
         1, // their defender
         [2, 3, 4], // our attackers
         [2, 3, 4] // their attackers
-      )
+      );
 
       // Pair [2, 3] should be optimal (min score 14 > others)
-      expect(result[0].attackers).toContain(2)
-      expect(result[0].attackers).toContain(3)
-      expect(result[0].isOptimal).toBe(true)
+      expect(result[0].attackers).toContain(2);
+      expect(result[0].attackers).toContain(3);
+      expect(result[0].isOptimal).toBe(true);
       // Expected score is the min of the pair (opponent chooses worse for us)
-      expect(result[0].expectedScore).toBe(14)
-    })
+      expect(result[0].expectedScore).toBe(14);
+    });
 
     it('should avoid sending weak attacker when strong pairs exist', () => {
       // Player 4 is terrible against opponent's defender (player 1)
@@ -487,65 +476,65 @@ describe('fullGameTheory', () => {
         [10, 16, 10, 10, 10], // Player 2 - great vs defender
         [10, 15, 10, 10, 10], // Player 3 - good vs defender
         [10, 2, 10, 10, 10], // Player 4 - terrible vs defender
-      ]
+      ];
 
-      const result = analyzeAttackerPhase(weakAttackerMatrix, 0, 1, [2, 3, 4], [2, 3, 4])
+      const result = analyzeAttackerPhase(weakAttackerMatrix, 0, 1, [2, 3, 4], [2, 3, 4]);
 
       // Optimal pair should NOT include player 4
-      expect(result[0].attackers).not.toContain(4)
-    })
-  })
+      expect(result[0].attackers).not.toContain(4);
+    });
+  });
 
   describe('Monte Carlo simulation: algorithm vs random opponent', () => {
     // Generate a balanced random matrix where total expected value = 50 for both
     function generateBalancedMatrix(): number[][] {
       const matrix: number[][] = Array(5)
         .fill(null)
-        .map(() => Array(5).fill(10))
+        .map(() => Array(5).fill(10));
 
       // For each pair (i, j) where i < j, set random score and its complement
       for (let i = 0; i < 5; i++) {
         for (let j = i + 1; j < 5; j++) {
-          const score = Math.floor(Math.random() * 21) // 0-20
-          matrix[i][j] = score
-          matrix[j][i] = 20 - score // Symmetric complement
+          const score = Math.floor(Math.random() * 21); // 0-20
+          matrix[i][j] = score;
+          matrix[j][i] = 20 - score; // Symmetric complement
         }
-        matrix[i][i] = 10 // Diagonal is neutral
+        matrix[i][i] = 10; // Diagonal is neutral
       }
 
-      return matrix
+      return matrix;
     }
 
     // Pick a random element from array
     function randomChoice<T>(arr: T[]): T {
-      return arr[Math.floor(Math.random() * arr.length)]
+      return arr[Math.floor(Math.random() * arr.length)];
     }
 
     // Pick a random pair from array
     function randomPair(arr: number[]): [number, number] {
-      const shuffled = [...arr].sort(() => Math.random() - 0.5)
-      return [shuffled[0], shuffled[1]]
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return [shuffled[0], shuffled[1]];
     }
 
     // Simulate a full game with algorithm (us) vs random (opponent)
     function simulateGame(matrix: number[][]): { ourScore: number; oppScore: number } {
-      let ourRemaining = [0, 1, 2, 3, 4]
-      let oppRemaining = [0, 1, 2, 3, 4]
-      let ourScore = 0
-      let oppScore = 0
+      let ourRemaining = [0, 1, 2, 3, 4];
+      let oppRemaining = [0, 1, 2, 3, 4];
+      let ourScore = 0;
+      let oppScore = 0;
 
       // Round 1: 5v5 -> 2 pairings
       {
         // We pick optimal defender
-        const defResult = analyzeDefenderPhase(matrix, ourRemaining, oppRemaining)
-        const ourDefender = defResult.defenderAnalyses[0].playerIndex
+        const defResult = analyzeDefenderPhase(matrix, ourRemaining, oppRemaining);
+        const ourDefender = defResult.defenderAnalyses[0].playerIndex;
 
         // Opponent picks random defender
-        const oppDefender = randomChoice(oppRemaining)
+        const oppDefender = randomChoice(oppRemaining);
 
         // Get attackers
-        const ourAttackers = ourRemaining.filter((p) => p !== ourDefender)
-        const oppAttackers = oppRemaining.filter((p) => p !== oppDefender)
+        const ourAttackers = ourRemaining.filter((p) => p !== ourDefender);
+        const oppAttackers = oppRemaining.filter((p) => p !== oppDefender);
 
         // We pick optimal attacker pair
         const atkResult = analyzeAttackerPhase(
@@ -554,43 +543,49 @@ describe('fullGameTheory', () => {
           oppDefender,
           ourAttackers,
           oppAttackers
-        )
-        const ourPair = atkResult[0].attackers
+        );
+        const ourPair = atkResult[0].attackers;
 
         // Opponent picks random attacker pair
-        const oppPair = randomPair(oppAttackers)
+        const oppPair = randomPair(oppAttackers);
 
         // Resolve: defenders choose from sent attackers
         // Our defender chooses best of oppPair
-        const ourDefScore = Math.max(matrix[ourDefender][oppPair[0]], matrix[ourDefender][oppPair[1]])
-        const oppAttackerChosen = matrix[ourDefender][oppPair[0]] >= matrix[ourDefender][oppPair[1]]
-          ? oppPair[0] : oppPair[1]
+        const ourDefScore = Math.max(
+          matrix[ourDefender][oppPair[0]],
+          matrix[ourDefender][oppPair[1]]
+        );
+        const oppAttackerChosen =
+          matrix[ourDefender][oppPair[0]] >= matrix[ourDefender][oppPair[1]]
+            ? oppPair[0]
+            : oppPair[1];
 
         // Their defender chooses worst for us from ourPair
-        const ourAtkScore = Math.min(matrix[ourPair[0]][oppDefender], matrix[ourPair[1]][oppDefender])
-        const ourAttackerChosen = matrix[ourPair[0]][oppDefender] <= matrix[ourPair[1]][oppDefender]
-          ? ourPair[0] : ourPair[1]
+        const ourAtkScore = Math.min(
+          matrix[ourPair[0]][oppDefender],
+          matrix[ourPair[1]][oppDefender]
+        );
+        const ourAttackerChosen =
+          matrix[ourPair[0]][oppDefender] <= matrix[ourPair[1]][oppDefender]
+            ? ourPair[0]
+            : ourPair[1];
 
-        ourScore += ourDefScore + ourAtkScore
-        oppScore += (20 - ourDefScore) + (20 - ourAtkScore)
+        ourScore += ourDefScore + ourAtkScore;
+        oppScore += 20 - ourDefScore + (20 - ourAtkScore);
 
         // Remove paired players
-        ourRemaining = ourRemaining.filter(
-          (p) => p !== ourDefender && p !== ourAttackerChosen
-        )
-        oppRemaining = oppRemaining.filter(
-          (p) => p !== oppDefender && p !== oppAttackerChosen
-        )
+        ourRemaining = ourRemaining.filter((p) => p !== ourDefender && p !== ourAttackerChosen);
+        oppRemaining = oppRemaining.filter((p) => p !== oppDefender && p !== oppAttackerChosen);
       }
 
       // Round 2: 3v3 -> 2 pairings
       {
-        const defResult = analyzeDefenderPhase(matrix, ourRemaining, oppRemaining)
-        const ourDefender = defResult.defenderAnalyses[0].playerIndex
-        const oppDefender = randomChoice(oppRemaining)
+        const defResult = analyzeDefenderPhase(matrix, ourRemaining, oppRemaining);
+        const ourDefender = defResult.defenderAnalyses[0].playerIndex;
+        const oppDefender = randomChoice(oppRemaining);
 
-        const ourAttackers = ourRemaining.filter((p) => p !== ourDefender)
-        const oppAttackers = oppRemaining.filter((p) => p !== oppDefender)
+        const ourAttackers = ourRemaining.filter((p) => p !== ourDefender);
+        const oppAttackers = oppRemaining.filter((p) => p !== oppDefender);
 
         const atkResult = analyzeAttackerPhase(
           matrix,
@@ -598,88 +593,104 @@ describe('fullGameTheory', () => {
           oppDefender,
           ourAttackers,
           oppAttackers
-        )
-        const ourPair = atkResult[0].attackers
-        const oppPair = randomPair(oppAttackers)
+        );
+        const ourPair = atkResult[0].attackers;
+        const oppPair = randomPair(oppAttackers);
 
-        const ourDefScore = Math.max(matrix[ourDefender][oppPair[0]], matrix[ourDefender][oppPair[1]])
-        const oppAttackerChosen = matrix[ourDefender][oppPair[0]] >= matrix[ourDefender][oppPair[1]]
-          ? oppPair[0] : oppPair[1]
+        const ourDefScore = Math.max(
+          matrix[ourDefender][oppPair[0]],
+          matrix[ourDefender][oppPair[1]]
+        );
+        const oppAttackerChosen =
+          matrix[ourDefender][oppPair[0]] >= matrix[ourDefender][oppPair[1]]
+            ? oppPair[0]
+            : oppPair[1];
 
-        const ourAtkScore = Math.min(matrix[ourPair[0]][oppDefender], matrix[ourPair[1]][oppDefender])
-        const ourAttackerChosen = matrix[ourPair[0]][oppDefender] <= matrix[ourPair[1]][oppDefender]
-          ? ourPair[0] : ourPair[1]
+        const ourAtkScore = Math.min(
+          matrix[ourPair[0]][oppDefender],
+          matrix[ourPair[1]][oppDefender]
+        );
+        const ourAttackerChosen =
+          matrix[ourPair[0]][oppDefender] <= matrix[ourPair[1]][oppDefender]
+            ? ourPair[0]
+            : ourPair[1];
 
-        ourScore += ourDefScore + ourAtkScore
-        oppScore += (20 - ourDefScore) + (20 - ourAtkScore)
+        ourScore += ourDefScore + ourAtkScore;
+        oppScore += 20 - ourDefScore + (20 - ourAtkScore);
 
-        ourRemaining = ourRemaining.filter(
-          (p) => p !== ourDefender && p !== ourAttackerChosen
-        )
-        oppRemaining = oppRemaining.filter(
-          (p) => p !== oppDefender && p !== oppAttackerChosen
-        )
+        ourRemaining = ourRemaining.filter((p) => p !== ourDefender && p !== ourAttackerChosen);
+        oppRemaining = oppRemaining.filter((p) => p !== oppDefender && p !== oppAttackerChosen);
       }
 
       // Round 3: 1v1 forced matchup
       {
-        const finalOur = ourRemaining[0]
-        const finalOpp = oppRemaining[0]
-        const finalScore = matrix[finalOur][finalOpp]
-        ourScore += finalScore
-        oppScore += 20 - finalScore
+        const finalOur = ourRemaining[0];
+        const finalOpp = oppRemaining[0];
+        const finalScore = matrix[finalOur][finalOpp];
+        ourScore += finalScore;
+        oppScore += 20 - finalScore;
       }
 
-      return { ourScore, oppScore }
+      return { ourScore, oppScore };
     }
 
     it('should win more than 55% of games against random opponent on balanced matrices', () => {
-      const NUM_GAMES = 100
-      let wins = 0
-      let ties = 0
+      const NUM_GAMES = 500;
+      let wins = 0;
+      let ties = 0;
 
       for (let i = 0; i < NUM_GAMES; i++) {
-        const matrix = generateBalancedMatrix()
-        const { ourScore, oppScore } = simulateGame(matrix)
+        // Reset memo cache for each game (each game has a different matrix)
+        clearMemoCache();
+        initMemoCache();
+
+        const matrix = generateBalancedMatrix();
+        const { ourScore, oppScore } = simulateGame(matrix);
 
         if (ourScore > oppScore) {
-          wins++
+          wins++;
         } else if (ourScore === oppScore) {
-          ties++
+          ties++;
         }
       }
 
-      const winRate = wins / NUM_GAMES
+      const winRate = wins / NUM_GAMES;
 
       // Log for visibility
-      console.log(`Algorithm vs Random: ${wins} wins, ${ties} ties out of ${NUM_GAMES} games`)
-      console.log(`Win rate: ${(winRate * 100).toFixed(1)}%`)
+      console.warn(`Algorithm vs Random: ${wins} wins, ${ties} ties out of ${NUM_GAMES} games`);
+      console.warn(`Win rate: ${(winRate * 100).toFixed(1)}%`);
 
       // We should win more than 55% of games
-      expect(winRate).toBeGreaterThan(0.55)
-    })
+      expect(winRate).toBeGreaterThan(0.55);
+    });
 
     it('should have positive expected score advantage on balanced matrices', () => {
-      const NUM_GAMES = 100
-      let totalOurScore = 0
-      let totalOppScore = 0
+      const NUM_GAMES = 500;
+      let totalOurScore = 0;
+      let totalOppScore = 0;
 
       for (let i = 0; i < NUM_GAMES; i++) {
-        const matrix = generateBalancedMatrix()
-        const { ourScore, oppScore } = simulateGame(matrix)
-        totalOurScore += ourScore
-        totalOppScore += oppScore
+        // Reset memo cache for each game (each game has a different matrix)
+        clearMemoCache();
+        initMemoCache();
+
+        const matrix = generateBalancedMatrix();
+        const { ourScore, oppScore } = simulateGame(matrix);
+        totalOurScore += ourScore;
+        totalOppScore += oppScore;
       }
 
-      const avgOurScore = totalOurScore / NUM_GAMES
-      const avgOppScore = totalOppScore / NUM_GAMES
+      const avgOurScore = totalOurScore / NUM_GAMES;
+      const avgOppScore = totalOppScore / NUM_GAMES;
 
-      console.log(`Average scores - Us: ${avgOurScore.toFixed(1)}, Opponent: ${avgOppScore.toFixed(1)}`)
+      console.warn(
+        `Average scores - Us: ${avgOurScore.toFixed(1)}, Opponent: ${avgOppScore.toFixed(1)}`
+      );
 
       // Our average score should exceed opponent's (>50 vs <50)
-      expect(avgOurScore).toBeGreaterThan(avgOppScore)
-    })
-  })
+      expect(avgOurScore).toBeGreaterThan(avgOppScore);
+    });
+  });
 
   describe('evaluateDefenderChoices', () => {
     it('should return 2 analyses, one per opponent attacker', () => {
@@ -691,11 +702,11 @@ describe('fullGameTheory', () => {
         [2, 4], // oppAttackers
         [0, 2, 3, 4], // ourRemainingPool (round 1: 5 minus already-paired player 1)
         [1, 2, 3, 4] // oppRemainingPool
-      )
+      );
 
-      expect(result).toHaveLength(2)
-      expect(result.map((a) => a.chosenOppAttacker).sort()).toEqual([2, 4])
-    })
+      expect(result).toHaveLength(2);
+      expect(result.map((a) => a.chosenOppAttacker).sort()).toEqual([2, 4]);
+    });
 
     it('should compute correct immediate scores', () => {
       const result = evaluateDefenderChoices(
@@ -706,15 +717,15 @@ describe('fullGameTheory', () => {
         [2, 4], // oppAttackers
         [0, 2, 3, 4],
         [1, 2, 3, 4]
-      )
+      );
 
       // Immediate score = matrix[ourDefender][chosenOppAttacker]
-      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!
-      const analysisVs4 = result.find((a) => a.chosenOppAttacker === 4)!
+      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!;
+      const analysisVs4 = result.find((a) => a.chosenOppAttacker === 4)!;
 
-      expect(analysisVs2.immediateScore).toBe(testMatrix[0][2]) // 15
-      expect(analysisVs4.immediateScore).toBe(testMatrix[0][4]) // 6
-    })
+      expect(analysisVs2.immediateScore).toBe(testMatrix[0][2]); // 15
+      expect(analysisVs4.immediateScore).toBe(testMatrix[0][4]); // 6
+    });
 
     it('should not mark either as recommended when total scores are tied', () => {
       // Create a matrix where both choices lead to the same total EV
@@ -724,7 +735,7 @@ describe('fullGameTheory', () => {
         [10, 10, 10, 10, 10],
         [10, 10, 10, 10, 10],
         [10, 10, 10, 10, 10],
-      ]
+      ];
 
       const result = evaluateDefenderChoices(
         tiedMatrix,
@@ -734,12 +745,12 @@ describe('fullGameTheory', () => {
         [2, 3],
         [0, 2, 3, 4],
         [1, 2, 3, 4]
-      )
+      );
 
-      expect(result[0].isRecommended).toBe(false)
-      expect(result[1].isRecommended).toBe(false)
-      expect(result[0].totalExpectedScore).toBe(result[1].totalExpectedScore)
-    })
+      expect(result[0].isRecommended).toBe(false);
+      expect(result[1].isRecommended).toBe(false);
+      expect(result[0].totalExpectedScore).toBe(result[1].totalExpectedScore);
+    });
 
     it('should mark strictly better choice as recommended', () => {
       // Player 0 (ourDefender) has very different scores vs opponents 2 and 4
@@ -753,12 +764,12 @@ describe('fullGameTheory', () => {
         [2, 4], // oppAttackers
         [0, 2, 3, 4],
         [1, 2, 3, 4]
-      )
+      );
 
       // Exactly one should be recommended (the one with higher total)
-      const recommended = result.filter((a) => a.isRecommended)
-      expect(recommended).toHaveLength(1)
-    })
+      const recommended = result.filter((a) => a.isRecommended);
+      expect(recommended).toHaveLength(1);
+    });
 
     it('should sometimes disagree with naive immediate-score comparison', () => {
       // Craft a matrix where picking the worse immediate matchup leads to better total EV
@@ -768,7 +779,7 @@ describe('fullGameTheory', () => {
       // If we pick opp 3 (bad), opp 2 goes back to pool and is great for us later
       const trickMatrix = [
         // Player 0 (our defender)
-        [10, 10, 18, 2, 10],   // vs opp2=18 (great), vs opp3=2 (terrible)
+        [10, 10, 18, 2, 10], // vs opp2=18 (great), vs opp3=2 (terrible)
         // Player 1 (opp defender)
         [10, 10, 10, 10, 10],
         // Player 2 (our attacker)
@@ -776,8 +787,8 @@ describe('fullGameTheory', () => {
         // Player 3 (our attacker - also in remaining)
         [10, 10, 10, 10, 10],
         // Player 4 (remaining)
-        [10, 10, 10, 0, 10],   // vs opp3=0 (terrible future if opp3 stays in pool)
-      ]
+        [10, 10, 10, 0, 10], // vs opp3=0 (terrible future if opp3 stays in pool)
+      ];
 
       // Our defender = 0, opp defender = 1
       // Our attackers = [2, 3], opp attackers = [2, 3]
@@ -789,24 +800,24 @@ describe('fullGameTheory', () => {
         [2, 3], // ourAttackers
         [2, 3], // oppAttackers (sent against our defender)
         [0, 2, 3, 4], // our remaining
-        [1, 2, 3, 4]  // opp remaining
-      )
+        [1, 2, 3, 4] // opp remaining
+      );
 
       // Naive: pick opp 2 (score 18 > 2)
       // But game-theoretic considers that picking opp 3 (score 2) removes them from pool,
       // which is better for player 4 in future rounds
-      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!
-      const analysisVs3 = result.find((a) => a.chosenOppAttacker === 3)!
+      const analysisVs2 = result.find((a) => a.chosenOppAttacker === 2)!;
+      const analysisVs3 = result.find((a) => a.chosenOppAttacker === 3)!;
 
       // The naive immediate score would say pick opp 2
-      expect(analysisVs2.immediateScore).toBeGreaterThan(analysisVs3.immediateScore)
+      expect(analysisVs2.immediateScore).toBeGreaterThan(analysisVs3.immediateScore);
 
       // But the total EV should factor in future rounds differently
       // We don't assert which is better (depends on full computation),
       // just that the total scores differ from the immediate ranking
-      expect(analysisVs2.totalExpectedScore).toBeDefined()
-      expect(analysisVs3.totalExpectedScore).toBeDefined()
-    })
+      expect(analysisVs2.totalExpectedScore).toBeDefined();
+      expect(analysisVs3.totalExpectedScore).toBeDefined();
+    });
 
     it('should work for round 2 scenario (3 remaining per side)', () => {
       // Round 2: 3v3, after this round 1v1 remains
@@ -817,16 +828,114 @@ describe('fullGameTheory', () => {
         [0, 4], // ourAttackers
         [0, 3], // oppAttackers
         [0, 1, 4], // our remaining (3 players)
-        [0, 2, 3]  // opp remaining (3 players)
-      )
+        [0, 2, 3] // opp remaining (3 players)
+      );
 
-      expect(result).toHaveLength(2)
+      expect(result).toHaveLength(2);
 
       // After locking 2 pairings, 1 player each remains = direct lookup for future
       result.forEach((analysis) => {
-        expect(analysis.totalExpectedScore).toBeDefined()
-        expect(analysis.immediateScore).toBeDefined()
-      })
-    })
-  })
-})
+        expect(analysis.totalExpectedScore).toBeDefined();
+        expect(analysis.immediateScore).toBeDefined();
+      });
+    });
+  });
+
+  describe('8v8 support', () => {
+    // 8x8 test matrix with strategic variety
+    const testMatrix8 = [
+      [10, 14, 6, 12, 8, 16, 4, 11],
+      [7, 10, 13, 9, 15, 5, 11, 8],
+      [15, 8, 10, 11, 6, 12, 9, 14],
+      [9, 12, 7, 10, 13, 11, 8, 6],
+      [11, 6, 14, 8, 10, 9, 13, 7],
+      [5, 16, 9, 10, 7, 10, 12, 15],
+      [13, 7, 11, 14, 5, 8, 10, 9],
+      [8, 11, 5, 7, 12, 13, 10, 10],
+    ];
+
+    const allPlayers8 = [0, 1, 2, 3, 4, 5, 6, 7];
+
+    it('should analyze defender phase for 8 players', () => {
+      const result = analyzeDefenderPhase(testMatrix8, allPlayers8, allPlayers8);
+
+      expect(result.defenderAnalyses).toHaveLength(8);
+      expect(result.payoffMatrix).toHaveLength(8);
+      expect(result.payoffMatrix[0]).toHaveLength(8);
+      expect(result.equilibrium).toBeDefined();
+      expect(result.gameValue).toBeDefined();
+    });
+
+    it('should complete 8v8 analysis in under 5 seconds', () => {
+      const start = performance.now();
+      analyzeDefenderPhase(testMatrix8, allPlayers8, allPlayers8);
+      const elapsed = performance.now() - start;
+      expect(elapsed).toBeLessThan(5000);
+    });
+
+    it('balanced 8x8 matrix should give game value near 80', () => {
+      const balanced8 = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill(10));
+      const result = analyzeDefenderPhase(balanced8, allPlayers8, allPlayers8);
+      expect(result.gameValue).toBeCloseTo(80, 0);
+    });
+
+    it('memoization should make repeated calls near-instant', () => {
+      // First call populates cache
+      analyzeDefenderPhase(testMatrix8, allPlayers8, allPlayers8);
+      // Second call should hit cache
+      const start = performance.now();
+      analyzeDefenderPhase(testMatrix8, allPlayers8, allPlayers8);
+      const elapsed = performance.now() - start;
+      expect(elapsed).toBeLessThan(50);
+    });
+
+    it('should handle intermediate states (6v6, 4v4, 2v2)', () => {
+      expect(() =>
+        analyzeDefenderPhase(testMatrix8, [0, 1, 2, 3, 4, 5], [2, 3, 4, 5, 6, 7])
+      ).not.toThrow();
+      expect(() => analyzeDefenderPhase(testMatrix8, [0, 1, 2, 3], [4, 5, 6, 7])).not.toThrow();
+      expect(() => analyzeDefenderPhase(testMatrix8, [0, 1], [6, 7])).not.toThrow();
+    });
+
+    it('should correctly handle n=2 base case via recursion', () => {
+      const result = analyzeDefenderPhase(testMatrix8, [0, 1], [6, 7]);
+      expect(result.defenderAnalyses).toHaveLength(2);
+      result.defenderAnalyses.forEach((analysis) => {
+        expect(analysis.gameValue).toBeDefined();
+        expect(analysis.gameValue).toBeGreaterThan(0);
+      });
+      // Game value should be sum of 2 pairings (each 0-20, so total 0-40)
+      expect(result.gameValue).toBeGreaterThan(0);
+      expect(result.gameValue).toBeLessThanOrEqual(40);
+    });
+
+    it('should return refused attacker fields from resolveAttackerExchange', () => {
+      const result = resolveAttackerExchange(
+        testMatrix8,
+        0, // ourDefender
+        1, // oppDefender
+        [2, 3, 4, 5, 6, 7], // our attackers
+        [0, 2, 3, 4, 5, 6] // opp attackers
+      );
+      expect(result.ourRefusedAttacker).toBeDefined();
+      expect(result.oppRefusedAttacker).toBeDefined();
+      // Refused attacker should not be in paired players
+      expect(result.ourPairedPlayers).not.toContain(result.ourRefusedAttacker);
+      expect(result.oppPairedPlayers).not.toContain(result.oppRefusedAttacker);
+    });
+
+    it('8v8 game value should be higher than 5v5 for balanced matrices', () => {
+      const balanced5 = Array(5)
+        .fill(null)
+        .map(() => Array(5).fill(10));
+      const balanced8 = Array(8)
+        .fill(null)
+        .map(() => Array(8).fill(10));
+      const result5 = analyzeDefenderPhase(balanced5, [0, 1, 2, 3, 4], [0, 1, 2, 3, 4]);
+      const result8 = analyzeDefenderPhase(balanced8, allPlayers8, allPlayers8);
+      expect(result8.gameValue).toBeGreaterThan(result5.gameValue);
+    });
+  });
+});

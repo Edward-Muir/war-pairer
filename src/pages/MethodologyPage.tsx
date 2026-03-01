@@ -15,8 +15,8 @@ export function MethodologyPage() {
         {/* Intro */}
         <p className="text-sm text-gray-600">
           The app uses game theory to recommend optimal defenders and attackers at each step of the
-          pairing process. It evaluates every possible future across all three rounds to find the
-          best move now. Here&rsquo;s how it works.
+          pairing process. It evaluates every possible future across all rounds to find the best
+          move now. Here&rsquo;s how it works.
         </p>
 
         {/* Section 1: Scoring */}
@@ -177,7 +177,7 @@ export function MethodologyPage() {
               The defender score and attacker maximin are useful intuitions, but they only look at{' '}
               <strong className="text-gray-900">the current round</strong>. The app goes much
               further &mdash; it considers{' '}
-              <strong className="text-gray-900">all three rounds together</strong>.
+              <strong className="text-gray-900">all rounds together</strong>.
             </p>
             <p>
               Think of it like chess: you don&rsquo;t just look at the next move, you think several
@@ -193,18 +193,23 @@ export function MethodologyPage() {
               <p>The app starts from the end and works backwards:</p>
               <ol className="list-decimal list-inside space-y-1 ml-1">
                 <li>
-                  <strong className="text-gray-900">Round 3</strong> is trivial &mdash; one player
-                  left each side, matchup is forced.
+                  <strong className="text-gray-900">Final round</strong> is trivial &mdash; the
+                  remaining matchups are forced.
                 </li>
                 <li>
-                  <strong className="text-gray-900">Round 2</strong>: for every possible 3-vs-3
-                  situation, find the best defender knowing how Round 3 will play out.
+                  <strong className="text-gray-900">Earlier rounds</strong>: for every possible
+                  situation, find the best defender knowing how all subsequent rounds will play out.
                 </li>
                 <li>
-                  <strong className="text-gray-900">Round 1</strong>: for every possible 5-vs-5
-                  choice, find the best defender knowing how Rounds 2 and 3 will play out.
+                  <strong className="text-gray-900">Round 1</strong>: find the best defender knowing
+                  the full consequences for every round that follows.
                 </li>
               </ol>
+              <p className="text-xs text-gray-500 mt-1.5">
+                For 5-player teams (UKTC) this is 3 rounds. For 8-player teams (WTC) it&rsquo;s 4
+                rounds, with the final round resolving 4 pairings at once via auto-pairing of
+                refused and uninvolved players.
+              </p>
             </div>
 
             <p>

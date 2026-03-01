@@ -6,7 +6,7 @@ import { Card } from '@/components/Common/Card';
 import { PlayerInput } from '@/components/Inputs/PlayerInput';
 import { useTeamStore, createDefaultPlayers } from '@/store/teamStore';
 import { validateUniqueFactions, getOtherSelectedFactions } from '@/utils';
-import type { Player } from '@/store/types';
+import type { Player, TeamSize } from '@/store/types';
 
 export function TeamSetupPage() {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ export function TeamSetupPage() {
   const isEditMode = Boolean(id);
   const existingTeam = id ? getTeam(id) : undefined;
 
+  const [teamSize, setTeamSize] = useState<TeamSize>(existingTeam?.teamSize ?? 5);
   const [teamName, setTeamName] = useState('');
   const [players, setPlayers] = useState<Player[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -27,14 +28,12 @@ export function TeamSetupPage() {
       setPlayers([...existingTeam.players]);
     } else if (!isEditMode) {
       setTeamName('');
-      setPlayers(createDefaultPlayers());
+      setPlayers(createDefaultPlayers(5));
     }
   }, [id, isEditMode, existingTeam]);
 
   const handlePlayerNameChange = (index: number, name: string) => {
-    setPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, name } : p))
-    );
+    setPlayers((prev) => prev.map((p, i) => (i === index ? { ...p, name } : p)));
     // Clear error when user starts typing
     if (errors[`player-${index}`]) {
       setErrors((prev) => {
@@ -46,9 +45,7 @@ export function TeamSetupPage() {
   };
 
   const handlePlayerFactionChange = (index: number, faction: string) => {
-    setPlayers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, faction } : p))
-    );
+    setPlayers((prev) => prev.map((p, i) => (i === index ? { ...p, faction } : p)));
     // Clear faction error when user changes selection
     if (errors[`faction-${index}`]) {
       setErrors((prev) => {
@@ -87,17 +84,16 @@ export function TeamSetupPage() {
   const handleSave = () => {
     if (!validate()) return;
 
-    const playersTuple = players as [Player, Player, Player, Player, Player];
-
     if (isEditMode && id) {
       updateTeam(id, {
         teamName: teamName.trim(),
-        players: playersTuple,
+        players,
       });
     } else {
       createTeam({
         teamName: teamName.trim(),
-        players: playersTuple,
+        teamSize,
+        players,
       });
     }
 
@@ -109,18 +105,11 @@ export function TeamSetupPage() {
   };
 
   return (
-    <Layout
-      title={isEditMode ? 'Edit Team' : 'Create Team'}
-      showBack
-      onBack={handleCancel}
-    >
+    <Layout title={isEditMode ? 'Edit Team' : 'Create Team'} showBack onBack={handleCancel}>
       <div className="flex flex-col gap-6 p-4">
         {/* Team Name Input */}
         <div>
-          <label
-            htmlFor="team-name"
-            className="mb-1 block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="team-name" className="mb-1 block text-sm font-medium text-gray-700">
             Team Name
           </label>
           <input
@@ -148,9 +137,44 @@ export function TeamSetupPage() {
               ${errors.teamName ? 'border-red-500' : 'border-gray-300'}
             `}
           />
-          {errors.teamName && (
-            <p className="mt-1 text-sm text-red-600">{errors.teamName}</p>
-          )}
+          {errors.teamName && <p className="mt-1 text-sm text-red-600">{errors.teamName}</p>}
+        </div>
+
+        {/* Team Size Selector */}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Team Format</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className={`flex-1 min-h-[44px] rounded-lg border text-sm font-medium transition-colors ${
+                teamSize === 5
+                  ? 'bg-blue-50 border-blue-500 text-blue-700'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+              onClick={() => {
+                setTeamSize(5);
+                setPlayers(createDefaultPlayers(5));
+              }}
+              disabled={isEditMode}
+            >
+              5 Players (UKTC)
+            </button>
+            <button
+              type="button"
+              className={`flex-1 min-h-[44px] rounded-lg border text-sm font-medium transition-colors ${
+                teamSize === 8
+                  ? 'bg-blue-50 border-blue-500 text-blue-700'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+              onClick={() => {
+                setTeamSize(8);
+                setPlayers(createDefaultPlayers(8));
+              }}
+              disabled={isEditMode}
+            >
+              8 Players (WTC)
+            </button>
+          </div>
         </div>
 
         {/* Players Section */}

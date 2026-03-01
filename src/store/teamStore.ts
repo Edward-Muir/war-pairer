@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Team, Player, CreateTeamInput, UpdateTeamInput } from './types';
+import type { Team, Player, CreateTeamInput, UpdateTeamInput, TeamSize } from './types';
 
 interface TeamState {
   teams: Team[];
@@ -18,13 +18,13 @@ type TeamStore = TeamState & TeamActions;
 /**
  * Creates default players for a new team
  */
-export const createDefaultPlayers = (): [Player, Player, Player, Player, Player] => {
-  return [0, 1, 2, 3, 4].map((index) => ({
+export const createDefaultPlayers = (teamSize: TeamSize = 5): Player[] => {
+  return Array.from({ length: teamSize }, (_, index) => ({
     id: crypto.randomUUID(),
     index,
     name: '',
     faction: '',
-  })) as [Player, Player, Player, Player, Player];
+  }));
 };
 
 export const useTeamStore = create<TeamStore>()(
@@ -39,6 +39,7 @@ export const useTeamStore = create<TeamStore>()(
         const newTeam: Team = {
           id: crypto.randomUUID(),
           teamName: input.teamName,
+          teamSize: input.teamSize,
           players: input.players,
           createdAt: now,
           updatedAt: now,
@@ -50,9 +51,7 @@ export const useTeamStore = create<TeamStore>()(
       updateTeam: (id, updates) => {
         set((state) => ({
           teams: state.teams.map((team) =>
-            team.id === id
-              ? { ...team, ...updates, updatedAt: new Date().toISOString() }
-              : team
+            team.id === id ? { ...team, ...updates, updatedAt: new Date().toISOString() } : team
           ),
         }));
       },
@@ -70,6 +69,17 @@ export const useTeamStore = create<TeamStore>()(
     {
       name: 'uktc-teams',
       storage: createJSONStorage(() => localStorage),
+      version: 2,
+      migrate: (persisted, version) => {
+        if (version < 2) {
+          const state = persisted as { teams: Team[] };
+          state.teams = state.teams.map((t) => ({
+            ...t,
+            teamSize: (t.teamSize ?? 5) as TeamSize,
+          }));
+        }
+        return persisted as TeamState & TeamActions;
+      },
     }
   )
 );

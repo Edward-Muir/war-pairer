@@ -2,23 +2,26 @@
 // Core Entity Types
 // ============================================
 
+export type TeamSize = 5 | 8;
+
 /**
  * A player/army in a team
  */
 export interface Player {
-  id: string;          // UUID for stable identity
-  index: number;       // 0-4 position in team
-  name: string;        // Display name, e.g., "Player 1" or "John"
-  faction: string;     // Faction/Army, e.g., "Space Marines"
+  id: string; // UUID for stable identity
+  index: number; // 0-based position in team
+  name: string; // Display name, e.g., "Player 1" or "John"
+  faction: string; // Faction/Army, e.g., "Space Marines"
 }
 
 /**
- * A persistent team of 5 players
+ * A persistent team of players
  */
 export interface Team {
   id: string;
   teamName: string;
-  players: [Player, Player, Player, Player, Player]; // Tuple for exactly 5
+  teamSize: TeamSize;
+  players: Player[];
   createdAt: string;
   updatedAt: string;
 }
@@ -29,18 +32,18 @@ export interface Team {
 export interface Pairing {
   ourPlayer: Player;
   oppPlayer: Player;
-  expectedScore: number;    // From matrix
-  actualScore?: number;     // Post-game result
-  round: 1 | 2 | 3;         // Which pairing round (not tournament round)
+  expectedScore: number; // From matrix
+  actualScore?: number; // Post-game result
+  round: number; // Which pairing round (not tournament round)
 }
 
 /**
  * The matchup matrix for scoring
  */
 export interface MatchupMatrix {
-  ourTeam: Player[];        // Our 5 players for this round
-  oppTeam: Player[];        // Opponent's 5 players
-  scores: number[][];       // scores[ourIndex][oppIndex] = expected score
+  ourTeam: Player[]; // Our 5 players for this round
+  oppTeam: Player[]; // Opponent's 5 players
+  scores: number[][]; // scores[ourIndex][oppIndex] = expected score
 }
 
 // ============================================
@@ -54,11 +57,11 @@ export type GameStatus = 'setup' | 'matrix' | 'pairing' | 'completed';
  */
 export interface Game {
   id: string;
-  ourTeam: Team;              // Snapshot of team at game creation
+  ourTeam: Team; // Snapshot of team at game creation
   opponentTeamName: string;
   opponentPlayers: Player[];
-  matrix: number[][];         // 5x5 scores
-  pairings: Pairing[];        // Filled after pairing completion
+  matrix: number[][]; // NxN scores (5x5 or 8x8)
+  pairings: Pairing[]; // Filled after pairing completion
   status: GameStatus;
   createdAt: string;
 }
@@ -86,18 +89,12 @@ export type Phase =
   | 'team-setup'
   | 'game-setup'
   | 'matrix-entry'
-  // Pairing round 1
-  | 'defender-1-select'
-  | 'defender-1-reveal'
-  | 'attacker-1-select'
-  | 'attacker-1-reveal'
-  | 'defender-1-choose'
-  // Pairing round 2
-  | 'defender-2-select'
-  | 'defender-2-reveal'
-  | 'attacker-2-select'
-  | 'attacker-2-reveal'
-  | 'defender-2-choose'
+  // Dynamic pairing rounds
+  | `defender-${number}-select`
+  | `defender-${number}-reveal`
+  | `attacker-${number}-select`
+  | `attacker-${number}-reveal`
+  | `defender-${number}-choose`
   // Completion
   | 'final-pairing'
   | 'game-summary';
@@ -111,7 +108,8 @@ export type Phase =
  */
 export type CreateTeamInput = {
   teamName: string;
-  players: [Player, Player, Player, Player, Player];
+  teamSize: TeamSize;
+  players: Player[];
 };
 
 /**
@@ -127,3 +125,69 @@ export type CreateGameInput = {
   opponentTeamName: string;
   opponentPlayers: Player[];
 };
+
+// ============================================
+// Team Size Helper Functions
+// ============================================
+
+/** Number of selection rounds before final */
+export function getSelectionRoundCount(size: TeamSize): number {
+  return size === 5 ? 2 : 3;
+}
+
+/** Total pairings in a complete game */
+export function getTotalPairings(size: TeamSize): number {
+  return size;
+}
+
+/** Whether this is the final selection round */
+export function isFinalSelectionRound(size: TeamSize, round: number): boolean {
+  return round === getSelectionRoundCount(size);
+}
+
+/** Generate the ordered list of pairing phases */
+export function generatePairingPhases(size: TeamSize): Phase[] {
+  const rounds = getSelectionRoundCount(size);
+  const phases: Phase[] = [];
+  for (let r = 1; r <= rounds; r++) {
+    phases.push(
+      `defender-${r}-select` as Phase,
+      `defender-${r}-reveal` as Phase,
+      `attacker-${r}-select` as Phase,
+      `attacker-${r}-reveal` as Phase,
+      `defender-${r}-choose` as Phase
+    );
+  }
+  phases.push('final-pairing');
+  return phases;
+}
+
+/** Generate the full phase order including setup phases */
+export function generatePhaseOrder(size: TeamSize): Phase[] {
+  return [
+    'home',
+    'team-setup',
+    'game-setup',
+    'matrix-entry',
+    ...generatePairingPhases(size),
+    'game-summary',
+  ];
+}
+
+/** Generate the previous-phase map for back navigation */
+export function generatePreviousPhaseMap(
+  size: TeamSize
+): Record<string, Phase | 'confirm-abandon'> {
+  const rounds = getSelectionRoundCount(size);
+  const map: Record<string, Phase | 'confirm-abandon'> = {};
+  for (let r = 1; r <= rounds; r++) {
+    map[`defender-${r}-select`] =
+      r === 1 ? 'confirm-abandon' : (`defender-${r - 1}-choose` as Phase);
+    map[`defender-${r}-reveal`] = `defender-${r}-select` as Phase;
+    map[`attacker-${r}-select`] = `defender-${r}-reveal` as Phase;
+    map[`attacker-${r}-reveal`] = `attacker-${r}-select` as Phase;
+    map[`defender-${r}-choose`] = `attacker-${r}-reveal` as Phase;
+  }
+  map['final-pairing'] = `defender-${rounds}-choose` as Phase;
+  return map;
+}

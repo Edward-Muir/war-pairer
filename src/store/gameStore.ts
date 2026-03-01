@@ -16,11 +16,7 @@ interface GameActions {
   deleteGame: (id: string) => void;
   updateGameMatrix: (gameId: string, matrix: number[][]) => void;
   completeGame: (gameId: string, pairings: Pairing[]) => void;
-  updateActualScore: (
-    gameId: string,
-    pairingIndex: number,
-    actualScore: number
-  ) => void;
+  updateActualScore: (gameId: string, pairingIndex: number, actualScore: number) => void;
 }
 
 type GameStore = GameState & GameActions;
@@ -45,7 +41,9 @@ export const useGameStore = create<GameStore>()(
           ourTeam: { ...team },
           opponentTeamName: input.opponentTeamName,
           opponentPlayers: input.opponentPlayers,
-          matrix: Array(5).fill(null).map(() => Array(5).fill(10)),
+          matrix: Array(team.teamSize)
+            .fill(null)
+            .map(() => Array(team.teamSize).fill(10)),
           pairings: [],
           status: 'matrix',
           createdAt: new Date().toISOString(),
@@ -75,25 +73,20 @@ export const useGameStore = create<GameStore>()(
       deleteGame: (id) => {
         set((state) => ({
           games: state.games.filter((g) => g.id !== id),
-          activeGameId:
-            state.activeGameId === id ? null : state.activeGameId,
+          activeGameId: state.activeGameId === id ? null : state.activeGameId,
         }));
       },
 
       updateGameMatrix: (gameId, matrix) => {
         set((state) => ({
-          games: state.games.map((g) =>
-            g.id === gameId ? { ...g, matrix } : g
-          ),
+          games: state.games.map((g) => (g.id === gameId ? { ...g, matrix } : g)),
         }));
       },
 
       completeGame: (gameId, pairings) => {
         set((state) => ({
           games: state.games.map((g) =>
-            g.id === gameId
-              ? { ...g, pairings, status: 'completed' as const }
-              : g
+            g.id === gameId ? { ...g, pairings, status: 'completed' as const } : g
           ),
         }));
       },

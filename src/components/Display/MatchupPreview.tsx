@@ -6,12 +6,12 @@ export interface MatchupPreviewProps {
   oppPlayer: Player;
   expectedScore: number;
   actualScore?: number;
-  round: 1 | 2 | 3;
+  round: number;
   compact?: boolean;
   className?: string;
 }
 
-function RoundBadge({ round }: { round: 1 | 2 | 3 }) {
+function RoundBadge({ round }: { round: number }) {
   return (
     <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-gray-200 text-xs font-medium text-gray-600">
       R{round}
@@ -38,9 +38,7 @@ export function MatchupPreview({
 }: MatchupPreviewProps) {
   if (compact) {
     return (
-      <div
-        className={`flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 ${className}`}
-      >
+      <div className={`flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 ${className}`}>
         <RoundBadge round={round} />
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
           {ourPlayer.name}
@@ -51,18 +49,14 @@ export function MatchupPreview({
         </span>
         <ScoreBadge score={expectedScore} size="sm" />
         {actualScore !== undefined && (
-          <span className="text-xs text-gray-500">
-            → {actualScore}
-          </span>
+          <span className="text-xs text-gray-500">→ {actualScore}</span>
         )}
       </div>
     );
   }
 
   return (
-    <div
-      className={`rounded-lg border border-gray-200 bg-white p-3 shadow-sm ${className}`}
-    >
+    <div className={`rounded-lg border border-gray-200 bg-white p-3 shadow-sm ${className}`}>
       <div className="mb-2 flex items-center gap-2">
         <RoundBadge round={round} />
         <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -75,9 +69,7 @@ export function MatchupPreview({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <PlayerIcon index={ourPlayer.index} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {ourPlayer.name}
-            </p>
+            <p className="truncate text-sm font-semibold text-gray-900">{ourPlayer.name}</p>
             <p className="truncate text-xs text-gray-500">{ourPlayer.faction}</p>
           </div>
         </div>
@@ -88,9 +80,7 @@ export function MatchupPreview({
         {/* Opponent player */}
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {oppPlayer.faction}
-            </p>
+            <p className="truncate text-sm font-semibold text-gray-900">{oppPlayer.faction}</p>
           </div>
           <PlayerIcon index={oppPlayer.index} />
         </div>
@@ -99,9 +89,7 @@ export function MatchupPreview({
         <div className="flex shrink-0 flex-col items-end gap-0.5">
           <ScoreBadge score={expectedScore} size="md" showDelta />
           {actualScore !== undefined && (
-            <span className="text-xs text-gray-500">
-              Actual: {actualScore}
-            </span>
+            <span className="text-xs text-gray-500">Actual: {actualScore}</span>
           )}
         </div>
       </div>

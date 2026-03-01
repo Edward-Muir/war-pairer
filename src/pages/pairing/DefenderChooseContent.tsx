@@ -10,21 +10,24 @@ import { useLockedTotal } from '@/hooks/useLockedTotal';
 import { evaluateDefenderChoices } from '@/algorithms/fullGameTheory';
 import type { DefenderChoiceAnalysis } from '@/algorithms/fullGameTheory';
 import type { Phase, Player } from '@/store/types';
+import { getSelectionRoundCount, isFinalSelectionRound } from '@/store/types';
 
 interface DefenderChooseContentProps {
-  round: 1 | 2;
+  round: number;
   onNext: (phase: Phase) => void;
 }
 
 export function DefenderChooseContent({ round, onNext }: DefenderChooseContentProps) {
   const { haptics } = useHaptic();
   const lockedTotal = useLockedTotal();
-  const { matrix, round1, round2, ourRemaining, oppRemaining, choosePairing } = usePairingStore();
+  const { matrix, getRound, teamSize, ourRemaining, oppRemaining, choosePairing } =
+    usePairingStore();
 
-  const ourDefender = round === 1 ? round1.ourDefender : round2.ourDefender;
-  const oppDefender = round === 1 ? round1.oppDefender : round2.oppDefender;
-  const ourAttackers = round === 1 ? round1.ourAttackers : round2.ourAttackers;
-  const oppAttackers = round === 1 ? round1.oppAttackers : round2.oppAttackers;
+  const roundState = getRound(round);
+  const ourDefender = roundState.ourDefender;
+  const oppDefender = roundState.oppDefender;
+  const ourAttackers = roundState.ourAttackers;
+  const oppAttackers = roundState.oppAttackers;
 
   // Our defender chooses which opponent attacker to face
   const [ourChoice, setOurChoice] = useState<Player | null>(null);
@@ -86,10 +89,37 @@ export function DefenderChooseContent({ round, onNext }: DefenderChooseContentPr
     // Lock pairing 2: Our attacker they chose vs their defender
     choosePairing(oppChoice, oppDefender, round);
 
-    // Navigate to next phase
-    if (round === 1) {
-      onNext('defender-2-select');
+    const selectionRounds = getSelectionRoundCount(teamSize);
+
+    if (round < selectionRounds) {
+      // More selection rounds to go
+      onNext(`defender-${round + 1}-select` as Phase);
+    } else if (isFinalSelectionRound(teamSize, round) && teamSize === 8) {
+      // 8v8 final selection round: auto-lock refused + uninvolved pairings
+      const state = usePairingStore.getState();
+      const remaining = state.ourRemaining;
+      const oppRem = state.oppRemaining;
+
+      if (remaining.length === 2 && oppRem.length === 2) {
+        // Refused attacker = the one from each side's pair that was NOT chosen
+        const ourRefused = ourAttackers!.find((a) => a.id !== oppChoice.id);
+        const oppRefused = oppAttackers!.find((a) => a.id !== ourChoice.id);
+
+        // Uninvolved player = the remaining one who was NOT a refused attacker
+        const ourUninvolved = remaining.find((p) => p.id !== ourRefused?.id);
+        const oppUninvolved = oppRem.find((p) => p.id !== oppRefused?.id);
+
+        if (ourRefused && oppRefused) {
+          choosePairing(ourRefused, oppRefused, round);
+        }
+        if (ourUninvolved && oppUninvolved) {
+          choosePairing(ourUninvolved, oppUninvolved, round);
+        }
+      }
+
+      onNext('final-pairing');
     } else {
+      // 5v5 final selection round (round 2 → final-pairing with forced 1v1)
       onNext('final-pairing');
     }
   };
@@ -134,7 +164,11 @@ export function DefenderChooseContent({ round, onNext }: DefenderChooseContentPr
                     </div>
                     <div className="flex items-center gap-2">
                       {analysis && (
-                        <EVBadge value={analysis.totalExpectedScore + lockedTotal} size="sm" />
+                        <EVBadge
+                          value={analysis.totalExpectedScore + lockedTotal}
+                          totalPairings={teamSize}
+                          size="sm"
+                        />
                       )}
                       <ScoreBadge score={score} showDelta />
                     </div>
@@ -212,7 +246,11 @@ export function DefenderChooseContent({ round, onNext }: DefenderChooseContentPr
 
       <div className="sticky bottom-0 pt-4 pb-4 -mx-4 px-4 bg-white border-t border-gray-200">
         <Button variant="primary" fullWidth disabled={!isValid} onClick={handleConfirm}>
-          Lock {round === 1 ? '2' : '2 More'} Pairings
+          {isFinalSelectionRound(teamSize, round)
+            ? `Lock ${teamSize === 8 ? '4' : '2 More'} Pairings`
+            : round === 1
+              ? 'Lock 2 Pairings'
+              : 'Lock 2 More Pairings'}
         </Button>
       </div>
     </div>

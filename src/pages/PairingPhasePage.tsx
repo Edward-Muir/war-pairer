@@ -8,6 +8,7 @@ import { LockedPairingsDrawer } from '@/components/Drawers/LockedPairingsDrawer'
 import { usePairingStore } from '@/store/pairingStore';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { Phase } from '@/store/types';
+import { generatePreviousPhaseMap } from '@/store/types';
 
 // Phase content components
 import { DefenderSelectContent } from './pairing/DefenderSelectContent';
@@ -17,49 +18,26 @@ import { AttackerRevealContent } from './pairing/AttackerRevealContent';
 import { DefenderChooseContent } from './pairing/DefenderChooseContent';
 import { FinalPairingContent } from './pairing/FinalPairingContent';
 
-// Phase to round mapping
-const phaseRound: Record<string, 1 | 2> = {
-  'defender-1-select': 1,
-  'defender-1-reveal': 1,
-  'attacker-1-select': 1,
-  'attacker-1-reveal': 1,
-  'defender-1-choose': 1,
-  'defender-2-select': 2,
-  'defender-2-reveal': 2,
-  'attacker-2-select': 2,
-  'attacker-2-reveal': 2,
-  'defender-2-choose': 2,
-};
+function getPhaseRound(phase: string): number | undefined {
+  const match = phase.match(/^(?:defender|attacker)-(\d+)-/);
+  return match ? parseInt(match[1], 10) : undefined;
+}
 
-// Phase titles for header
-const phaseTitles: Record<string, string> = {
-  'defender-1-select': 'Round 1: Select Defender',
-  'defender-1-reveal': 'Round 1: Reveal Defenders',
-  'attacker-1-select': 'Round 1: Select Attackers',
-  'attacker-1-reveal': 'Round 1: Reveal Attackers',
-  'defender-1-choose': 'Round 1: Defender Chooses',
-  'defender-2-select': 'Round 2: Select Defender',
-  'defender-2-reveal': 'Round 2: Reveal Defenders',
-  'attacker-2-select': 'Round 2: Select Attackers',
-  'attacker-2-reveal': 'Round 2: Reveal Attackers',
-  'defender-2-choose': 'Round 2: Defender Chooses',
-  'final-pairing': 'Final Pairing',
-};
-
-// Phase-aware back navigation mapping
-const previousPhaseMap: Record<string, Phase | 'confirm-abandon'> = {
-  'defender-1-select': 'confirm-abandon', // First phase - show abandon confirmation
-  'defender-1-reveal': 'defender-1-select',
-  'attacker-1-select': 'defender-1-reveal',
-  'attacker-1-reveal': 'attacker-1-select',
-  'defender-1-choose': 'attacker-1-reveal',
-  'defender-2-select': 'defender-1-choose',
-  'defender-2-reveal': 'defender-2-select',
-  'attacker-2-select': 'defender-2-reveal',
-  'attacker-2-reveal': 'attacker-2-select',
-  'defender-2-choose': 'attacker-2-reveal',
-  'final-pairing': 'defender-2-choose',
-};
+function getPhaseTitle(phase: string): string {
+  if (phase === 'final-pairing') return 'Final Pairing';
+  const round = getPhaseRound(phase);
+  if (!round) return 'Pairing';
+  if (phase.startsWith('defender') && phase.endsWith('-select'))
+    return `Round ${round}: Select Defender`;
+  if (phase.startsWith('defender') && phase.endsWith('-reveal'))
+    return `Round ${round}: Reveal Defenders`;
+  if (phase.startsWith('attacker') && phase.endsWith('-select'))
+    return `Round ${round}: Select Attackers`;
+  if (phase.startsWith('attacker') && phase.endsWith('-reveal'))
+    return `Round ${round}: Reveal Attackers`;
+  if (phase.endsWith('-choose')) return `Round ${round}: Defender Chooses`;
+  return 'Pairing';
+}
 
 export function PairingPhasePage() {
   const { id, phase } = useParams<{
@@ -68,7 +46,7 @@ export function PairingPhasePage() {
   }>();
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
-  const { setPhase, matrix, pairings, reset: resetPairingStore } = usePairingStore();
+  const { setPhase, matrix, pairings, teamSize, reset: resetPairingStore } = usePairingStore();
 
   // UI state
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
@@ -85,7 +63,8 @@ export function PairingPhasePage() {
 
   const goBack = () => {
     const currentPhase = phase as Phase;
-    const previousPhase = previousPhaseMap[currentPhase];
+    const prevMap = generatePreviousPhaseMap(teamSize);
+    const previousPhase = prevMap[currentPhase];
 
     if (previousPhase === 'confirm-abandon') {
       // First pairing phase - show confirmation before abandoning
@@ -119,8 +98,8 @@ export function PairingPhasePage() {
   }
 
   const currentPhase = phase as Phase;
-  const title = phaseTitles[currentPhase] || 'Pairing';
-  const round = phaseRound[currentPhase] as 1 | 2 | undefined;
+  const title = getPhaseTitle(currentPhase);
+  const round = getPhaseRound(currentPhase);
 
   // Header right actions
   const headerRightActions = (
@@ -147,32 +126,32 @@ export function PairingPhasePage() {
     </>
   );
 
-  // Render phase-specific content
+  // Render phase-specific content based on phase suffix
   const renderContent = () => {
-    switch (currentPhase) {
-      case 'defender-1-select':
-      case 'defender-2-select':
-        return <DefenderSelectContent round={round!} onNext={goToPhase} />;
-
-      case 'defender-1-reveal':
-      case 'defender-2-reveal':
-        return <DefenderRevealContent round={round!} onNext={goToPhase} />;
-
-      case 'attacker-1-select':
-      case 'attacker-2-select':
-        return <AttackerSelectContent round={round!} onNext={goToPhase} />;
-
-      case 'attacker-1-reveal':
-      case 'attacker-2-reveal':
-        return <AttackerRevealContent round={round!} onNext={goToPhase} />;
-
-      case 'defender-1-choose':
-      case 'defender-2-choose':
-        return <DefenderChooseContent round={round!} onNext={goToPhase} />;
-
-      case 'final-pairing':
-        return <FinalPairingContent onComplete={goToSummary} />;
-
+    if (currentPhase === 'final-pairing') {
+      return <FinalPairingContent onComplete={goToSummary} />;
+    }
+    if (round === undefined) {
+      return (
+        <div className="p-4">
+          <p className="text-gray-600">Unknown phase: {currentPhase}</p>
+        </div>
+      );
+    }
+    const suffix = currentPhase.replace(/^(?:defender|attacker)-\d+-/, '');
+    const type = currentPhase.startsWith('defender-') ? 'defender' : 'attacker';
+    const key = `${type}-${suffix}`;
+    switch (key) {
+      case 'defender-select':
+        return <DefenderSelectContent round={round} onNext={goToPhase} />;
+      case 'defender-reveal':
+        return <DefenderRevealContent round={round} onNext={goToPhase} />;
+      case 'attacker-select':
+        return <AttackerSelectContent round={round} onNext={goToPhase} />;
+      case 'attacker-reveal':
+        return <AttackerRevealContent round={round} onNext={goToPhase} />;
+      case 'defender-choose':
+        return <DefenderChooseContent round={round} onNext={goToPhase} />;
       default:
         return (
           <div className="p-4">
@@ -190,6 +169,7 @@ export function PairingPhasePage() {
         onBack={goBack}
         currentPhase={currentPhase}
         rightAction={headerRightActions}
+        hideMenu
       >
         <AnimatePresence mode="wait">
           <motion.div
