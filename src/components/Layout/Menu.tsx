@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Info, X } from 'lucide-react';
+import { BookOpen, Info, Settings2, X } from 'lucide-react';
 import { APP_VERSION } from '@/version';
 
 interface MenuProps {
@@ -65,6 +65,10 @@ export function Menu({ isOpen, onClose }: MenuProps) {
 
             {/* Menu Items */}
             <div className="py-2 flex-1">
+              <button onClick={() => handleNavigate('/matchup-defaults')} className={menuItemClass}>
+                <Settings2 className={iconClass} />
+                <span>Matchup Defaults</span>
+              </button>
               <button
                 onClick={() => handleNavigate('/pairings-explained')}
                 className={menuItemClass}

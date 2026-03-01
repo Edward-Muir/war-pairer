@@ -11,6 +11,7 @@ import { PairingPhasePage } from '@/pages/PairingPhasePage';
 import { GameSummaryPage } from '@/pages/GameSummaryPage';
 import { MethodologyPage } from '@/pages/MethodologyPage';
 import { PairingsExplainedPage } from '@/pages/PairingsExplainedPage';
+import { MatchupDefaultsPage } from '@/pages/MatchupDefaultsPage';
 
 function App() {
   const { updateAvailable } = useVersionCheck();
@@ -28,6 +29,7 @@ function App() {
         {/* Info pages */}
         <Route path="/pairings-explained" element={<PairingsExplainedPage />} />
         <Route path="/methodology" element={<MethodologyPage />} />
+        <Route path="/matchup-defaults" element={<MatchupDefaultsPage />} />
 
         {/* Game flow */}
         <Route path="/game/new" element={<GameSetupPage />} />

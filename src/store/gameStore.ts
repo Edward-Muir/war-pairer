@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Game, CreateGameInput, Pairing } from './types';
 import { useTeamStore } from './teamStore';
+import { useMatchupDefaultsStore } from './matchupDefaultsStore';
 
 interface GameState {
   games: Game[];
@@ -36,6 +37,8 @@ export const useGameStore = create<GameStore>()(
           return null;
         }
 
+        const { getDefault } = useMatchupDefaultsStore.getState();
+
         const newGame: Game = {
           id: crypto.randomUUID(),
           ourTeam: { ...team },
@@ -43,7 +46,15 @@ export const useGameStore = create<GameStore>()(
           opponentPlayers: input.opponentPlayers,
           matrix: Array(team.teamSize)
             .fill(null)
-            .map(() => Array(team.teamSize).fill(10)),
+            .map((_, ourIdx) =>
+              Array(team.teamSize)
+                .fill(null)
+                .map((_, oppIdx) => {
+                  const ourFaction = team.players[ourIdx]?.faction;
+                  const oppFaction = input.opponentPlayers[oppIdx]?.faction;
+                  return ourFaction && oppFaction ? getDefault(ourFaction, oppFaction) : 10;
+                })
+            ),
           pairings: [],
           status: 'matrix',
           createdAt: new Date().toISOString(),
